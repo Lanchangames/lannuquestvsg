@@ -36,7 +36,7 @@
             touch-action: none;
         }
 
-        /* --- 背景イラストの設定 (20%透過) --- */
+        /* 背景イラストの設定 (20%透過) */
         #game-bg {
             position: absolute;
             top: 0;
@@ -46,12 +46,12 @@
             background-image: url('haikei.png'); 
             background-size: cover;
             background-position: center;
-            opacity: 0.2; /* 20%の透過度 */
-            z-index: 0;   /* 最背面 */
+            opacity: 0.2; 
+            z-index: 0;
             pointer-events: none;
         }
 
-        /* --- グリッド線の強化 (3pxに太くし、視認性を向上) --- */
+        /* グリッド線の強化 (3pxに太くし、視認性を向上) */
         #game-world {
             position: absolute;
             width: 100%;
@@ -224,6 +224,20 @@
         .left  { grid-column: 1; grid-row: 2; }
         .down  { grid-column: 2; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
+
+        /* クレジット表示用スタイル */
+        #credits {
+            margin-top: 40px;
+            color: #888;
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.6;
+            letter-spacing: 0.05em;
+        }
+        .credit-item {
+            margin: 0 10px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -275,6 +289,11 @@
         <div class="btn left" id="btn-left">◀</div>
         <div class="btn down" id="btn-down">▼</div>
         <div class="btn right" id="btn-right">▶</div>
+    </div>
+
+    <div id="credits">
+        <span class="credit-item">ゲーム制作：ろかス</span>
+        <span class="credit-item">イラスト：水田</span>
     </div>
 
     <script>
