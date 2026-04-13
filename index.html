@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ランぬクエスト VSジークフリートさん</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0d0d0d;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            touch-action: none;
+        }
+        h1 { color: #ff3300; margin: 5px 0 2px 0; text-shadow: 0 0 10px #ff0000; font-size: 16px; text-align: center; pointer-events: none;}
+
+        .message { color: white; margin-bottom: 8px; font-size: 10px; text-align: center; line-height: 1.3; max-width: 320px; pointer-events: none;}
+        .note { color: #888; font-size: 9px; }
+
+        #game-viewport {
+            position: relative;
+            width: 320px;
+            height: 400px; /* ボタン被り防止のため高さを400pxに調整 */
+            border: 4px solid #4a0000;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #1a0a0a;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #game-world {
+            position: absolute;
+            width: 100%;
+            height: 3000px; 
+            top: -2600px; /* 表示位置を微調整 */
+            background-image: 
+                linear-gradient(#2d1010 2px, transparent 2px),
+                linear-gradient(90deg, #2d1010 1px, transparent 1px);
+            background-size: 100% 80px, 40px 100%;
+        }
+
+        #player {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 10;
+        }
+
+        .sword {
+            position: absolute;
+            font-size: 28px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            filter: drop-shadow(0 0 5px #fff);
+            animation: spinSword 0.25s infinite linear;
+        }
+
+        @keyframes spinSword {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #goal {
+            position: absolute;
+            top: 50px;
+            left: 125px;
+            width: 70px;
+            height: 70px;
+            font-size: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            filter: drop-shadow(0 0 15px #ff0000);
+            animation: roar 1s infinite alternate;
+        }
+
+        @keyframes roar {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.1); opacity: 1; }
+        }
+
+        #ui-panel {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            color: #ff3300;
+            background: rgba(0,0,0,0.8);
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 100;
+            border: 1px solid #4a0000;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+
+        #custom-dialog {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 260px;
+            background: rgba(20, 0, 0, 0.98);
+            border: 3px solid #ff3300;
+            border-radius: 15px;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 0 50px black;
+        }
+
+        #custom-dialog h2 { font-size: 18px; color: #ff3300; margin: 0 0 10px 0; }
+        #custom-dialog input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 2px solid #ff3300;
+            background: #000;
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .dialog-btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        #custom-dialog button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .btn-save { background: #ff3300; color: white; }
+        .btn-share { background: #1da1f2; color: white; }
+        .btn-retry { background: #555; color: white; }
+
+        #ranking-display {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #ffd700;
+            padding: 6px;
+            border-radius: 8px;
+            font-size: 9px;
+            z-index: 100;
+            pointer-events: none;
+            width: 130px;
+            border: 1px solid #4a0000;
+        }
+
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(2, 50px);
+            gap: 12px;
+            margin-top: 10px;
+            user-select: none;
+        }
+
+        .btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(139, 0, 0, 0.3);
+            border: 2px solid #ff3300;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: #ff3300;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active { background: rgba(255, 0, 0, 0.5); }
+        .up    { grid-column: 2; grid-row: 1; }
+        .left  { grid-column: 1; grid-row: 2; }
+        .down  { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+    </style>
+</head>
+<body>
+
+    <h1>ランぬクエスト VSジークフリートさん<br>※※※非公式同人ゲーム※※※</h1>
+
+    <div class="message">
+        ジークフリートさんがくりだす剣を回避していまこそ並び立つぞ！<br>
+        <span class="note">※スコアや名前は公開されず現在のブラウザ内でのみ保存されます。</span>
+    </div>
+    
+    <div id="game-viewport">
+        <div id="ui-panel">
+            竜まで: <span id="dist">--</span>m<br>
+            TIME: <span id="timer">0.0</span>s<br>
+            LIFE: <span id="life-icons">❤️❤️❤️</span>
+        </div>
+        
+        <div id="game-world">
+            <div id="player"></div>
+            <div id="goal">🐉</div>
+        </div>
+
+        <div id="custom-dialog">
+            <h2 id="dialog-title">RESULT</h2>
+            <div id="dialog-text" style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;"></div>
+            
+            <div id="input-area">
+                <input type="text" id="player-name" maxlength="8" placeholder="団長の名前を教えてくれ">
+            </div>
+
+            <div class="dialog-btn-container">
+                <button id="btn-action-save" class="btn-save">スコアを保存して次へ</button>
+                <button id="btn-action-share" class="btn-share">スコアを𝕏に投稿してくれ</button>
+                <button id="btn-action-retry" class="btn-retry">もう一度挑戦</button>
+            </div>
+        </div>
+
+        <div id="ranking-display">
+            <strong>FINAL RANKING</strong><br>
+            <span id="rank-list">記録なし</span>
+        </div>
+    </div>
+
+    <div id="controls">
+        <div class="btn up" id="btn-up">▲</div>
+        <div class="btn left" id="btn-left">◀</div>
+        <div class="btn down" id="btn-down">▼</div>
+        <div class="btn right" id="btn-right">▶</div>
+    </div>
+
+    <script>
+        const viewport = document.getElementById('game-viewport');
+        const world = document.getElementById('game-world');
+        const playerElement = document.getElementById('player');
+        const timerElement = document.getElementById('timer');
+        const distElement = document.getElementById('dist');
+        const lifeIconsElement = document.getElementById('life-icons');
+        const rankListElement = document.getElementById('rank-list');
+        
+        const dialog = document.getElementById('custom-dialog');
+        const dialogTitle = document.getElementById('dialog-title');
+        const dialogText = document.getElementById('dialog-text');
+        const inputArea = document.getElementById('input-area');
+        const nameInput = document.getElementById('player-name');
+        
+        const btnSave = document.getElementById('btn-action-save');
+        const btnShare = document.getElementById('btn-action-share');
+        const btnRetry = document.getElementById('btn-action-retry');
+
+        const charaImg = new Image();
+        charaImg.src = 'chara.png';
+        charaImg.onload = () => {
+            playerElement.style.backgroundImage = `url('${charaImg.src}')`;
+            viewport.style.opacity = '1';
+            requestAnimationFrame(loop);
+        };
+
+        let player = { x: 135, y: 2940, w: 50, h: 50 };
+        let enemies = [];
+        let gameActive = true;
+        let startTime = Date.now();
+        let finalScore = 0;
+        let shareText = "";
+        let life = 3;
+        let invincibilityFrames = 0;
+        let damagePenalty = 0;
+
+        const viewHeight = 400; // 調整後の高さ
+        const RANKING_KEY = 'lannu_ranking_final';
+
+        displayRanking();
+        updateView();
+
+        function updateView() {
+            playerElement.style.left = player.x + 'px';
+            playerElement.style.top = player.y + 'px';
+            let scrollY = player.y - viewHeight / 2;
+            if (scrollY < 0) scrollY = 0;
+            if (scrollY > 3000 - viewHeight) scrollY = 3000 - viewHeight;
+            world.style.top = -scrollY + 'px';
+            let distance = Math.floor(player.y - 100);
+            distElement.innerText = (distance < 0 ? 0 : distance);
+
+            let icons = "";
+            for(let i=0; i<3; i++) icons += i < life ? "❤️" : "🖤";
+            lifeIconsElement.innerText = icons;
+
+            if (invincibilityFrames > 0) {
+                playerElement.style.opacity = (invincibilityFrames % 10 < 5) ? "0.3" : "1";
+            } else {
+                playerElement.style.opacity = "1";
+            }
+        }
+
+        function movePlayer(dir) {
+            if (!gameActive) return;
+            const speed = 28; 
+            if (dir === 'up') player.y -= speed;
+            if (dir === 'down') player.y += speed;
+            if (dir === 'left') player.x -= speed;
+            if (dir === 'right') player.x += speed;
+            player.x = Math.max(0, Math.min(270, player.x));
+            player.y = Math.max(0, Math.min(2940, player.y));
+            updateView();
+            if (player.y < 120 && player.x > 100 && player.x < 170) {
+                gameActive = false;
+                showResult(true);
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') movePlayer('up');
+            if (e.key === 'ArrowDown') movePlayer('down');
+            if (e.key === 'ArrowLeft') movePlayer('left');
+            if (e.key === 'ArrowRight') movePlayer('right');
+        });
+
+        function addControl(id, dir) {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); movePlayer(dir); }, {passive: false});
+            el.addEventListener('mousedown', (e) => { movePlayer(dir); });
+        }
+        addControl('btn-up', 'up');
+        addControl('btn-down', 'down');
+        addControl('btn-left', 'left');
+        addControl('btn-right', 'right');
+
+        function createEnemy() {
+            if (!gameActive) return;
+            const enemyDiv = document.createElement('div');
+            enemyDiv.className = 'sword';
+            enemyDiv.innerText = '⚔️';
+            let x = Math.random() * 290;
+            let y = player.y - 450 - (Math.random() * 250);
+            if (y < 0) y = 10;
+            enemyDiv.style.left = x + 'px';
+            enemyDiv.style.top = y + 'px';
+            world.appendChild(enemyDiv);
+            enemies.push({ el: enemyDiv, x: x + 14, y: y + 14 });
+        }
+
+        function moveEnemies() {
+            if (!gameActive) return;
+            let time = ((Date.now() - startTime) / 1000).toFixed(1);
+            timerElement.innerText = time;
+            if (invincibilityFrames > 0) invincibilityFrames--;
+
+            const pCX = player.x + 25;
+            const pCY = player.y + 25;
+
+            enemies.forEach((e, index) => {
+                e.y += 4.5; 
+                if (e.el) e.el.style.top = (e.y - 14) + 'px';
+                
+                const dist = Math.sqrt((e.x - pCX)**2 + (e.y - pCY)**2);
+                if (dist < 26 && invincibilityFrames <= 0) {
+                    life--;
+                    damagePenalty += 5000;
+                    invincibilityFrames = 60;
+                    updateView();
+
+                    if (life <= 0) {
+                        gameActive = false;
+                        showResult(false);
+                    }
+                }
+                if (e.y > player.y + 600) {
+                    if (e.el) e.el.remove();
+                    enemies.splice(index, 1);
+                }
+            });
+        }
+
+        function showResult(isWin) {
+            dialog.style.display = "block";
+            if (isWin) {
+                const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+                finalScore = Math.max(100, 50000 - Math.floor(finalTime * 250) - damagePenalty);
+                
+                let evaluation = "";
+                if (finalScore >= 45000) {
+                    evaluation = "★★★<br>強くなったな、フェードラッヘは安泰だ";
+                } else if (finalScore >= 30000) {
+                    evaluation = "★★☆<br>なかなかやるな、ランスロット";
+                } else {
+                    evaluation = "★☆☆<br>もっと手合わせをしてやろうか？";
+                }
+
+                dialogTitle.innerText = "★CLEAR!★";
+                dialogText.innerHTML = `フェードラッヘはまかせてください！<br><br>${evaluation}<br><br>タイム: ${finalTime}秒 / スコア: ${finalScore}点`;
+                shareText = `【ランぬクエスト VSジークフリートさん】をクリア！\n評価: ${evaluation}\nスコア: ${finalScore}点\n#ランぬクエスト #ジークフリートさん戦`;
+                
+                inputArea.style.display = "block";
+                btnSave.style.display = "block";
+                btnShare.style.display = "block";
+                btnRetry.style.display = "none";
+            } else {
+                dialogTitle.innerText = "GAME OVER";
+                dialogText.innerHTML = "やっぱりジークフリートさんは最強だ…<br>修行しなおしてくるぞ！";
+                inputArea.style.display = "none";
+                btnSave.style.display = "none";
+                btnShare.style.display = "none";
+                btnRetry.style.display = "block";
+            }
+        }
+
+        btnSave.onclick = () => {
+            const name = nameInput.value || "師に並んだランぬ";
+            saveScore(name, finalScore);
+            location.reload();
+        };
+
+        btnShare.onclick = () => {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+            window.open(url, '_blank');
+        };
+
+        btnRetry.onclick = () => {
+            location.reload();
+        };
+
+        function saveScore(name, score) {
+            let ranking = JSON.parse(localStorage.getItem(RANKING_KEY)) || [];
+            ranking.push({name: name, score: score});
+            ranking.sort((a, b) => b.score - a.score);
+            ranking = ranking.slice(0, 5);
+            localStorage.setItem(RANKING_KEY, JSON.stringify(ranking));
+        }
+
+        function displayRanking() {
+            let ranking = JSON.parse(localStorage.getItem(RANKING_KEY)) || [];
+            if (ranking.length === 0) return;
+            let html = "";
+            ranking.forEach((item, i) => {
+                let dName = item.name.length > 7 ? item.name.substring(0, 6) + '…' : item.name;
+                html += `${i+1}. ${dName} (${item.score})<br>`;
+            });
+            rankListElement.innerHTML = html;
+        }
+
+        setInterval(createEnemy, 260); 
+        function loop() {
+            moveEnemies();
+            if (gameActive) {
+                updateView();
+                requestAnimationFrame(loop);
+            }
+        }
+    </script>
+</body>
+</html>
