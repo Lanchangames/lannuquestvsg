@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ランぬクエスト VSジークフリートさん</title>
     <style>
         body {
@@ -52,13 +52,14 @@
             box-sizing: border-box;
         }
 
-        /* タイトルロゴ画像の設定：白い光を強調 */
         .title-img {
-            max-width: 280px;
+            max-width: 260px;
             height: auto;
             margin-bottom: 15px;
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9)) 
-                    drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+            /* 修正点: 透過背景色の設定 */
+            background-color: rgba(220, 220, 220, 0.6);
+            padding: 10px;
+            border-radius: 8px;
         }
 
         #start-screen .start-message { 
@@ -83,271 +84,60 @@
             touch-action: manipulation;
         }
 
-        .btn-start:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #200000;
-        }
-
-        #game-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('haikei.png'); 
-            background-size: cover;
-            background-position: center;
-            opacity: 0.2; 
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        #game-world {
-            position: absolute;
-            width: 100%;
-            height: 3000px; 
-            top: -2600px;
-            background-image: 
-                linear-gradient(rgba(255, 51, 0, 0.2) 3px, transparent 3px),
-                linear-gradient(90deg, rgba(255, 51, 0, 0.1) 2px, transparent 2px);
-            background-size: 100% 80px, 40px 100%;
-            z-index: 1;
-        }
-
-        #player {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            z-index: 10;
-        }
-
-        .sword {
-            position: absolute;
-            font-size: 28px;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-            filter: drop-shadow(0 0 5px #fff);
-            animation: spinSword 0.25s infinite linear;
-        }
-
-        @keyframes spinSword {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        #goal {
-            position: absolute;
-            top: 50px;
-            left: 125px;
-            width: 70px;
-            height: 70px;
-            font-size: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            filter: drop-shadow(0 0 15px #ff0000);
-            animation: roar 1s infinite alternate;
-        }
-
-        @keyframes roar {
-            from { transform: scale(1); opacity: 0.8; }
-            to { transform: scale(1.1); opacity: 1; }
-        }
-
-        #ui-panel {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            color: #ff3300;
-            background: rgba(0,0,0,0.8);
-            padding: 5px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-            z-index: 100;
-            border: 1px solid #4a0000;
-            pointer-events: none;
-            line-height: 1.4;
-        }
-
-        #custom-dialog {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 260px;
-            background: rgba(20, 0, 0, 0.98);
-            border: 3px solid #ff3300;
-            border-radius: 15px;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            z-index: 1000;
-            box-shadow: 0 0 50px black;
-        }
-
+        /* 以下スタイル維持 */
+        #game-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('haikei.png'); background-size: cover; background-position: center; opacity: 0.2; z-index: 0; pointer-events: none; }
+        #game-world { position: absolute; width: 100%; height: 3000px; top: -2600px; background-image: linear-gradient(rgba(255, 51, 0, 0.2) 3px, transparent 3px), linear-gradient(90deg, rgba(255, 51, 0, 0.1) 2px, transparent 2px); background-size: 100% 80px, 40px 100%; z-index: 1; }
+        #player { position: absolute; width: 50px; height: 50px; background-size: contain; background-repeat: no-repeat; background-position: center; z-index: 10; }
+        .sword { position: absolute; font-size: 28px; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; z-index: 5; filter: drop-shadow(0 0 5px #fff); animation: spinSword 0.25s infinite linear; }
+        @keyframes spinSword { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #goal { position: absolute; top: 50px; left: 125px; width: 70px; height: 70px; font-size: 70px; display: flex; justify-content: center; align-items: center; z-index: 10; filter: drop-shadow(0 0 15px #ff0000); animation: roar 1s infinite alternate; }
+        @keyframes roar { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.1); opacity: 1; } }
+        #ui-panel { position: absolute; top: 5px; left: 5px; color: #ff3300; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; z-index: 100; border: 1px solid #4a0000; pointer-events: none; line-height: 1.4; }
+        #custom-dialog { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; background: rgba(20, 0, 0, 0.98); border: 3px solid #ff3300; border-radius: 15px; color: white; padding: 20px; text-align: center; z-index: 1000; box-shadow: 0 0 50px black; }
         #custom-dialog h2 { font-size: 18px; color: #ff3300; margin: 0 0 10px 0; }
-        #custom-dialog input {
-            width: 80%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border: 2px solid #ff3300;
-            background: #000;
-            color: #fff;
-            font-size: 16px;
-            text-align: center;
-        }
-
-        .dialog-btn-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        #custom-dialog button {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
+        #custom-dialog input { width: 80%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 2px solid #ff3300; background: #000; color: #fff; font-size: 16px; text-align: center; }
+        .dialog-btn-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        #custom-dialog button { width: 100%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 13px; }
         .btn-save { background: #ff3300; color: white; }
         .btn-share { background: #1da1f2; color: white; }
         .btn-retry { background: #555; color: white; }
-
-        #ranking-display {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #ffd700;
-            padding: 6px;
-            border-radius: 8px;
-            font-size: 9px;
-            z-index: 100;
-            pointer-events: none;
-            width: 130px;
-            border: 1px solid #4a0000;
-        }
-
-        #controls {
-            display: grid;
-            grid-template-columns: repeat(3, 60px);
-            grid-template-rows: repeat(2, 60px);
-            gap: 15px;
-            margin-top: 20px;
-            user-select: none;
-            touch-action: manipulation;
-        }
-
-        .btn {
-            width: 60px;
-            height: 60px;
-            background: rgba(139, 0, 0, 0.3);
-            border: 2px solid #ff3300;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: #ff3300;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-
+        #ranking-display { position: absolute; bottom: 5px; left: 5px; background: rgba(0, 0, 0, 0.8); color: #ffd700; padding: 6px; border-radius: 8px; font-size: 9px; z-index: 100; pointer-events: none; width: 130px; border: 1px solid #4a0000; }
+        #controls { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 15px; margin-top: 20px; user-select: none; touch-action: manipulation; }
+        .btn { width: 60px; height: 60px; background: rgba(139, 0, 0, 0.3); border: 2px solid #ff3300; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #ff3300; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .btn:active { background: rgba(255, 0, 0, 0.5); }
-        .up    { grid-column: 2; grid-row: 1; }
-        .left  { grid-column: 1; grid-row: 2; }
-        .down  { grid-column: 2; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; }
-
-        #credits {
-            margin-top: 40px;
-            color: #888;
-            font-size: 11px;
-            text-align: center;
-            line-height: 1.6;
-            letter-spacing: 0.05em;
-        }
-        .credit-item {
-            margin: 0 10px;
-            display: inline-block;
-        }
+        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .down { grid-column: 2; grid-row: 2; } .right { grid-column: 3; grid-row: 2; }
+        #credits { margin-top: 40px; color: #888; font-size: 11px; text-align: center; line-height: 1.6; letter-spacing: 0.05em; }
+        .credit-item { margin: 0 10px; display: inline-block; }
     </style>
 </head>
 <body>
-
     <div id="game-viewport">
         <div id="start-screen">
             <img src="title.png" alt="ランぬクエスト VSジークフリートさん" class="title-img">
-            
             <div class="start-message">
                 十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>
                 <span class="note">スコアや名前は公開されず現在のブラウザ内でのみ保存されます。</span>
             </div>
             <button class="btn-start" onclick="startGame()">START</button>
         </div>
-
         <div id="game-bg"></div>
-
-        <div id="ui-panel">
-            師匠まで: <span id="dist">--</span>m<br>
-            TIME: <span id="timer">0.0</span>s<br>
-            LIFE: <span id="life-icons">❤️❤️❤️</span>
-        </div>
-        
-        <div id="game-world">
-            <div id="player"></div>
-            <div id="goal">🐉</div>
-        </div>
-
+        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>TIME: <span id="timer">0.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️</span></div>
+        <div id="game-world"><div id="player"></div><div id="goal">🐉</div></div>
         <div id="custom-dialog">
-            <h2 id="dialog-title">RESULT</h2>
-            <div id="dialog-text" style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;"></div>
-            
-            <div id="input-area">
-                <input type="text" id="player-name" maxlength="8" placeholder="団長の名前を教えてくれ">
-            </div>
-
+            <h2 id="dialog-title">RESULT</h2><div id="dialog-text" style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;"></div>
+            <div id="input-area"><input type="text" id="player-name" maxlength="8" placeholder="団長の名前を教えてくれ"></div>
             <div class="dialog-btn-container">
                 <button id="btn-action-save" class="btn-save">スコアを保存して次へ</button>
                 <button id="btn-action-share" class="btn-share">スコアを𝕏に投稿してくれ</button>
                 <button id="btn-action-retry" class="btn-retry">もう一度挑戦</button>
             </div>
         </div>
-
-        <div id="ranking-display">
-            <strong>ハイスコア</strong><br>
-            <span id="rank-list">記録なし</span>
-        </div>
+        <div id="ranking-display"><strong>ハイスコア</strong><br><span id="rank-list">記録なし</span></div>
     </div>
-
     <div id="controls">
-        <div class="btn up" id="btn-up">▲</div>
-        <div class="btn left" id="btn-left">◀</div>
-        <div class="btn down" id="btn-down">▼</div>
-        <div class="btn right" id="btn-right">▶</div>
+        <div class="btn up" id="btn-up">▲</div><div class="btn left" id="btn-left">◀</div><div class="btn down" id="btn-down">▼</div><div class="btn right" id="btn-right">▶</div>
     </div>
-
-    <div id="credits">
-        <span class="credit-item">ゲーム制作：ろかす</span>
-        <span class="credit-item">イラスト：水田</span><br><br>
-    </div>
+    <div id="credits"><span class="credit-item">ゲーム制作：ろかす</span><span class="credit-item">イラスト：水田</span><br><br></div>
 
     <script>
         const viewport = document.getElementById('game-viewport');
@@ -369,14 +159,8 @@
 
         const charaImg = new Image();
         charaImg.src = 'chara.png';
-        charaImg.onload = () => {
-            playerElement.style.backgroundImage = `url('${charaImg.src}')`;
-            viewport.style.opacity = '1';
-        };
-        charaImg.onerror = () => {
-            playerElement.style.backgroundColor = '#ff3300';
-            viewport.style.opacity = '1';
-        };
+        charaImg.onload = () => { playerElement.style.backgroundImage = `url('${charaImg.src}')`; viewport.style.opacity = '1'; };
+        charaImg.onerror = () => { playerElement.style.backgroundColor = '#ff3300'; viewport.style.opacity = '1'; };
 
         let player = { x: 135, y: 2940, w: 50, h: 50 };
         let enemies = [];
@@ -387,18 +171,18 @@
         let life = 3;
         let invincibilityFrames = 0;
         let damagePenalty = 0;
-
         const viewHeight = 400; 
         const RANKING_KEY = 'lannu_ranking_final';
 
         displayRanking();
         updateView();
 
+        // 修正点: スタートバグ回避
         function startGame() {
             startScreen.style.display = 'none';
             gameActive = true;
             startTime = Date.now();
-            setInterval(createEnemy, 260); 
+            setInterval(() => createEnemy(), 260); 
             requestAnimationFrame(loop);
         }
 
@@ -411,16 +195,11 @@
             world.style.top = -scrollY + 'px';
             let distance = Math.floor(player.y - 100);
             distElement.innerText = (distance < 0 ? 0 : distance);
-
             let icons = "";
             for(let i=0; i<3; i++) icons += i < life ? "❤️" : "🖤";
             lifeIconsElement.innerText = icons;
-
-            if (invincibilityFrames > 0) {
-                playerElement.style.opacity = (invincibilityFrames % 10 < 5) ? "0.3" : "1";
-            } else {
-                playerElement.style.opacity = "1";
-            }
+            if (invincibilityFrames > 0) playerElement.style.opacity = (invincibilityFrames % 10 < 5) ? "0.3" : "1";
+            else playerElement.style.opacity = "1";
         }
 
         function movePlayer(dir) {
@@ -433,10 +212,7 @@
             player.x = Math.max(0, Math.min(270, player.x));
             player.y = Math.max(0, Math.min(2940, player.y));
             updateView();
-            if (player.y < 120 && player.x > 100 && player.x < 170) {
-                gameActive = false;
-                showResult(true);
-            }
+            if (player.y < 120 && player.x > 100 && player.x < 170) { gameActive = false; showResult(true); }
         }
 
         window.addEventListener('keydown', (e) => {
@@ -448,16 +224,10 @@
 
         function addControl(id, dir) {
             const el = document.getElementById(id);
-            el.addEventListener('touchstart', (e) => { 
-                e.preventDefault(); 
-                movePlayer(dir); 
-            }, {passive: false});
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); movePlayer(dir); }, {passive: false});
             el.addEventListener('mousedown', (e) => { movePlayer(dir); });
         }
-        addControl('btn-up', 'up');
-        addControl('btn-down', 'down');
-        addControl('btn-left', 'left');
-        addControl('btn-right', 'right');
+        addControl('btn-up', 'up'); addControl('btn-down', 'down'); addControl('btn-left', 'left'); addControl('btn-right', 'right');
 
         function createEnemy() {
             if (!gameActive) return;
@@ -478,30 +248,17 @@
             let time = ((Date.now() - startTime) / 1000).toFixed(1);
             timerElement.innerText = time;
             if (invincibilityFrames > 0) invincibilityFrames--;
-
             const pCX = player.x + 25;
             const pCY = player.y + 25;
-
             enemies.forEach((e, index) => {
                 e.y += 4.5; 
                 if (e.el) e.el.style.top = (e.y - 14) + 'px';
-                
                 const dist = Math.sqrt((e.x - pCX)**2 + (e.y - pCY)**2);
                 if (dist < 26 && invincibilityFrames <= 0) {
-                    life--;
-                    damagePenalty += 5000;
-                    invincibilityFrames = 60;
-                    updateView();
-
-                    if (life <= 0) {
-                        gameActive = false;
-                        showResult(false);
-                    }
+                    life--; damagePenalty += 5000; invincibilityFrames = 60; updateView();
+                    if (life <= 0) { gameActive = false; showResult(false); }
                 }
-                if (e.y > player.y + 600) {
-                    if (e.el) e.el.remove();
-                    enemies.splice(index, 1);
-                }
+                if (e.y > player.y + 600) { if (e.el) e.el.remove(); enemies.splice(index, 1); }
             });
         }
 
@@ -510,76 +267,27 @@
             if (isWin) {
                 const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
                 finalScore = Math.max(100, 50000 - Math.floor(finalTime * 250) - damagePenalty);
-                
                 let evaluation = "";
-                if (finalScore >= 45000) {
-                    evaluation = "★★★\n強くなったな、フェードラッヘは安泰だ";
-                } else if (finalScore >= 30000) {
-                    evaluation = "★★☆\nなかなかやるな、ランスロット";
-                } else {
-                    evaluation = "★☆☆\nもっと手合わせをしてやろうか？";
-                }
-
+                if (finalScore >= 45000) evaluation = "★★★\n強くなったな、フェードラッヘは安泰だ";
+                else if (finalScore >= 30000) evaluation = "★★☆\nなかなかやるな、ランスロット";
+                else evaluation = "★☆☆\nもっと手合わせをしてやろうか？";
                 dialogTitle.innerText = "★CLEAR!★";
                 dialogText.innerHTML = `フェードラッヘはまかせてください！<br><br>${evaluation.replace(/\n/g, '<br>')}<br><br>タイム: ${finalTime}秒 / スコア: ${finalScore}点`;
-                
                 const shareEval = evaluation.replace(/\n/g, '');
                 shareText = `【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${shareEval} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
-                
-                inputArea.style.display = "block";
-                btnSave.style.display = "block";
-                btnShare.style.display = "block";
-                btnRetry.style.display = "none";
+                inputArea.style.display = "block"; btnSave.style.display = "block"; btnShare.style.display = "block"; btnRetry.style.display = "none";
             } else {
                 dialogTitle.innerText = "GAME OVER";
                 dialogText.innerHTML = "やっぱりジークフリートさんは最強だ…<br>修行しなおしてくるぞ！";
-                inputArea.style.display = "none";
-                btnSave.style.display = "none";
-                btnShare.style.display = "none";
-                btnRetry.style.display = "block";
+                inputArea.style.display = "none"; btnSave.style.display = "none"; btnShare.style.display = "none"; btnRetry.style.display = "block";
             }
         }
-
-        btnSave.onclick = () => {
-            const name = nameInput.value || "師に並んだランぬ";
-            saveScore(name, finalScore);
-            location.reload();
-        };
-
-        btnShare.onclick = () => {
-            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-            window.open(url, '_blank');
-        };
-
-        btnRetry.onclick = () => {
-            location.reload();
-        };
-
-        function saveScore(name, score) {
-            let ranking = JSON.parse(localStorage.getItem(RANKING_KEY)) || [];
-            ranking.push({name: name, score: score});
-            ranking.sort((a, b) => b.score - a.score);
-            ranking = ranking.slice(0, 5);
-            localStorage.setItem(RANKING_KEY, JSON.stringify(ranking));
-        }
-
-        function displayRanking() {
-            let ranking = JSON.parse(localStorage.getItem(RANKING_KEY)) || [];
-            if (ranking.length === 0) return;
-            let html = "";
-            ranking.forEach((item, i) => {
-                let dName = item.name.length > 7 ? item.name.substring(0, 6) + '…' : item.name;
-                html += `${i+1}. ${dName} (${item.score})<br>`;
-            });
-            rankListElement.innerHTML = html;
-        }
-
-        function loop() {
-            if (!gameActive) return;
-            moveEnemies();
-            updateView();
-            requestAnimationFrame(loop);
-        }
+        btnSave.onclick = () => { const name = nameInput.value || "師に並んだランぬ"; saveScore(name, finalScore); location.reload(); };
+        btnShare.onclick = () => { const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`; window.open(url, '_blank'); };
+        btnRetry.onclick = () => { location.reload(); };
+        function saveScore(name, score) { let ranking = JSON.parse(localStorage.getItem(RANKING_KEY)) || []; ranking.push({name: name, score: score}); ranking.sort((a, b) => b.score - a.score); ranking = ranking.slice(0, 5); localStorage.setItem(RANKING_KEY, JSON.stringify(ranking)); }
+        function displayRanking() { let ranking = JSON.parse(localStorage.getItem(RANKING_KEY)) || []; if (ranking.length === 0) return; let html = ""; ranking.forEach((item, i) => { let dName = item.name.length > 7 ? item.name.substring(0, 6) + '…' : item.name; html += `${i+1}. ${dName} (${item.score})<br>`; }); rankListElement.innerHTML = html; }
+        function loop() { if (!gameActive) return; moveEnemies(); updateView(); requestAnimationFrame(loop); }
     </script>
 </body>
 </html>
