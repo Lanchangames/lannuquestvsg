@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
     <title>ランぬクエスト VSジークフリートさん</title>
     <style>
         body {
@@ -17,11 +17,9 @@
             font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
             padding-top: 20px;
             padding-bottom: 50px;
-            /* 修正ポイント2: ブラウザ独自のダブルタップズーム挙動を抑制 */
             touch-action: manipulation;
         }
 
-        /* ゲーム画面の外枠 */
         #game-viewport {
             position: relative;
             width: 320px;
@@ -33,11 +31,9 @@
             box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
             opacity: 0;
             transition: opacity 0.5s;
-            /* ゲーム画面内は全てのデフォルト操作を無効化 */
             touch-action: none;
         }
 
-        /* スタート画面のオーバーレイ */
         #start-screen {
             position: absolute;
             top: 0;
@@ -56,11 +52,13 @@
             box-sizing: border-box;
         }
 
-        #start-screen h1 { 
-            color: #ff3300; 
-            margin: 0 0 15px 0; 
-            text-shadow: 0 0 10px #ff0000; 
-            font-size: 16px; 
+        /* タイトルロゴ画像の設定：白い光を強調 */
+        .title-img {
+            max-width: 280px;
+            height: auto;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9)) 
+                    drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
         }
 
         #start-screen .start-message { 
@@ -82,7 +80,6 @@
             cursor: pointer;
             box-shadow: 0 4px 0 #200000;
             text-shadow: 0 0 5px #ff3300;
-            /* ボタン個別のダブルタップズーム防止 */
             touch-action: manipulation;
         }
 
@@ -91,7 +88,6 @@
             box-shadow: 0 2px 0 #200000;
         }
 
-        /* 背景イラストの設定 */
         #game-bg {
             position: absolute;
             top: 0;
@@ -255,7 +251,6 @@
             gap: 15px;
             margin-top: 20px;
             user-select: none;
-            /* 操作エリア全体でダブルタップズームを防止 */
             touch-action: manipulation;
         }
 
@@ -272,7 +267,6 @@
             color: #ff3300;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
-            /* ボタン個別のダブルタップズーム防止 */
             touch-action: manipulation;
         }
 
@@ -300,7 +294,8 @@
 
     <div id="game-viewport">
         <div id="start-screen">
-            <h1>ランぬクエスト VSジークフリートさん<br><span style="font-size: 10px;">※※※非公式同人ゲーム※※※</span></h1>
+            <img src="title.png" alt="ランぬクエスト VSジークフリートさん" class="title-img">
+            
             <div class="start-message">
                 十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>
                 <span class="note">スコアや名前は公開されず現在のブラウザ内でのみ保存されます。</span>
@@ -525,11 +520,9 @@
                     evaluation = "★☆☆\nもっと手合わせをしてやろうか？";
                 }
 
-                // ダイアログ表示用 (\n -> <br>)
                 dialogTitle.innerText = "★CLEAR!★";
                 dialogText.innerHTML = `フェードラッヘはまかせてください！<br><br>${evaluation.replace(/\n/g, '<br>')}<br><br>タイム: ${finalTime}秒 / スコア: ${finalScore}点`;
                 
-                // シェア用 (改行を除去)
                 const shareEval = evaluation.replace(/\n/g, '');
                 shareText = `【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${shareEval} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
                 
