@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ランぬクエスト VSジークフリートさん</title>
     <style>
         body {
@@ -17,6 +17,8 @@
             font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
             padding-top: 20px;
             padding-bottom: 50px;
+            /* 修正ポイント2: ブラウザ独自のダブルタップズーム挙動を抑制 */
+            touch-action: manipulation;
         }
 
         /* ゲーム画面の外枠 */
@@ -31,6 +33,7 @@
             box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
             opacity: 0;
             transition: opacity 0.5s;
+            /* ゲーム画面内は全てのデフォルト操作を無効化 */
             touch-action: none;
         }
 
@@ -79,6 +82,8 @@
             cursor: pointer;
             box-shadow: 0 4px 0 #200000;
             text-shadow: 0 0 5px #ff3300;
+            /* ボタン個別のダブルタップズーム防止 */
+            touch-action: manipulation;
         }
 
         .btn-start:active {
@@ -250,6 +255,7 @@
             gap: 15px;
             margin-top: 20px;
             user-select: none;
+            /* 操作エリア全体でダブルタップズームを防止 */
             touch-action: manipulation;
         }
 
@@ -266,6 +272,8 @@
             color: #ff3300;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
+            /* ボタン個別のダブルタップズーム防止 */
+            touch-action: manipulation;
         }
 
         .btn:active { background: rgba(255, 0, 0, 0.5); }
