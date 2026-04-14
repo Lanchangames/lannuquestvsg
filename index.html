@@ -72,6 +72,38 @@
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=3, invincibilityFrames=0, damagePenalty=0;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final';
+
+        // --- SE用オーディオコンテキスト ---
+        let audioCtx = null;
+        function playSE(type) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'move') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'damage') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'goal') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.type = 'square'; o.connect(g); g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(freq, now + i * 0.1);
+                    g.gain.setValueAtTime(0.05, now + i * 0.1);
+                    g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.3);
+                    o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3);
+                });
+            }
+        }
+
         displayRanking(); updateView();
 
         function startGame(){ startScreen.style.display='none'; gameActive=true; startTime=Date.now(); setInterval(createEnemy, 260); requestAnimationFrame(loop); }
@@ -86,7 +118,8 @@
             if(!gameActive)return; const speed=28;
             if(d==='up')player.y-=speed; if(d==='down')player.y+=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
             player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2940,player.y));
-            updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; showResult(true);}
+            playSE('move'); // 移動音
+            updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('goal'); showResult(true);}
         }
         function addControl(id,d){ let el=document.getElementById(id); el.addEventListener('touchstart',e=>{e.preventDefault(); movePlayer(d);},{passive:false}); el.addEventListener('mousedown',()=>movePlayer(d)); }
         addControl('btn-up','up'); addControl('btn-down','down'); addControl('btn-left','left'); addControl('btn-right','right');
@@ -104,7 +137,7 @@
             enemies.forEach((e,n)=>{
                 e.y+=4.5; if(e.el)e.el.style.top=(e.y-14)+'px';
                 if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<26&&invincibilityFrames<=0){
-                    life--; damagePenalty+=5000; invincibilityFrames=60; updateView(); if(life<=0){gameActive=false; showResult(false);}
+                    life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
                 }
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
             });
