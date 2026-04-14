@@ -385,7 +385,7 @@
 
         let player = { x: 135, y: 2940, w: 50, h: 50 };
         let enemies = [];
-        let gameActive = false; // 最初は待機状態
+        let gameActive = false;
         let startTime = null;
         let finalScore = 0;
         let shareText = "";
@@ -399,7 +399,6 @@
         displayRanking();
         updateView();
 
-        // スタートボタン処理
         function startGame() {
             startScreen.style.display = 'none';
             gameActive = true;
@@ -519,16 +518,20 @@
                 
                 let evaluation = "";
                 if (finalScore >= 45000) {
-                    evaluation = "★★★<br>強くなったな、フェードラッヘは安泰だ";
+                    evaluation = "★★★\n強くなったな、フェードラッヘは安泰だ";
                 } else if (finalScore >= 30000) {
-                    evaluation = "★★☆<br>なかなかやるな、ランスロット";
+                    evaluation = "★★☆\nなかなかやるな、ランスロット";
                 } else {
-                    evaluation = "★☆☆<br>もっと手合わせをしてやろうか？";
+                    evaluation = "★☆☆\nもっと手合わせをしてやろうか？";
                 }
 
+                // ダイアログ表示用 (\n -> <br>)
                 dialogTitle.innerText = "★CLEAR!★";
-                dialogText.innerHTML = `フェードラッヘはまかせてください！<br><br>${evaluation}<br><br>タイム: ${finalTime}秒 / スコア: ${finalScore}点`;
-                shareText = `【ランぬクエスト VSジークフリートさん】をクリア！\n評価: ${evaluation}\nスコア: ${finalScore}点\n#ランぬクエスト #ジークフリートさん戦`;
+                dialogText.innerHTML = `フェードラッヘはまかせてください！<br><br>${evaluation.replace(/\n/g, '<br>')}<br><br>タイム: ${finalTime}秒 / スコア: ${finalScore}点`;
+                
+                // シェア用 (改行を除去)
+                const shareEval = evaluation.replace(/\n/g, '');
+                shareText = `【ランぬクエスト VSジークフリートさん】をクリア！ 評価: ${shareEval} スコア: ${finalScore}点 #ランぬクエスト #ジークフリートさん戦`;
                 
                 inputArea.style.display = "block";
                 btnSave.style.display = "block";
