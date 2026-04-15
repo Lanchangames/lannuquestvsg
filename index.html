@@ -43,13 +43,14 @@
             <img src="title.png" alt="タイトル" class="title-img">
             <div class="start-message">
                 十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br><br>
+                <span class="note">45秒以内に師匠に並び立とう！</span><br>
                 <span class="note">スコアや名前はブラウザ内でのみ保存されます。</span><br>
                 <span class="note">音が出ますのでご注意ください。</span>
             </div>
             <button class="btn-start" onclick="startGame()">START</button>
         </div>
         <div id="game-bg"></div>
-        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>TIME: <span id="timer">0.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️</span></div>
+        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">45.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️</span></div>
         <div id="game-world"><div id="player"></div><div id="goal">🐉</div></div>
         <div id="custom-dialog">
             <h2 id="dialog-title">RESULT</h2><div id="dialog-text" style="font-size:13px;line-height:1.5;margin-bottom:10px;"></div>
@@ -76,8 +77,8 @@
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=3, invincibilityFrames=0, damagePenalty=0;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final';
+        const TIME_LIMIT = 45000; // 45秒制限
 
-        // --- SE用オーディオコンテキスト ---
         let audioCtx = null;
         function playSE(type) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -89,22 +90,22 @@
             const now = audioCtx.currentTime;
 
             if (type === 'start') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); // 少し高めに調整
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now);
                 osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
-                gain.gain.setValueAtTime(0.2, now); // 音量を0.1から0.2にアップ
+                gain.gain.setValueAtTime(0.2, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.1);
                 osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'move') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
                 osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
-                gain.gain.setValueAtTime(0.15, now); // 0.05から0.15にアップ
+                gain.gain.setValueAtTime(0.15, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.05);
                 osc.start(now); osc.stop(now + 0.05);
             } else if (type === 'damage') {
-                osc.type = 'square'; // sawtoothからよりはっきり聞こえるsquareに変更
+                osc.type = 'square';
                 osc.frequency.setValueAtTime(330, now);
                 osc.frequency.linearRampToValueAtTime(165, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now); // 0.1から0.15にアップ
+                gain.gain.setValueAtTime(0.15, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.2);
                 osc.start(now); osc.stop(now + 0.2);
             } else if (type === 'goal') {
@@ -112,7 +113,7 @@
                     const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
                     o.type = 'square'; o.connect(g); g.connect(audioCtx.destination);
                     o.frequency.setValueAtTime(freq, now + i * 0.1);
-                    g.gain.setValueAtTime(0.1, now + i * 0.1); // 0.05から0.1にアップ
+                    g.gain.setValueAtTime(0.1, now + i * 0.1);
                     g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.3);
                     o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3);
                 });
@@ -154,7 +155,20 @@
             enemies.push({el:eDiv, x:x+14, y:y+14});
         }
         function moveEnemies(){
-            if(!gameActive)return; timerElement.innerText=((Date.now()-startTime)/1000).toFixed(1); if(invincibilityFrames>0)invincibilityFrames--;
+            if(!gameActive)return; 
+            
+            // タイムアップ判定
+            let elapsed = Date.now() - startTime;
+            let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000);
+            timerElement.innerText = remaining.toFixed(1);
+            
+            if (elapsed >= TIME_LIMIT) {
+                gameActive = false;
+                showResult(false, true);
+                return;
+            }
+
+            if(invincibilityFrames>0)invincibilityFrames--;
             const pX=player.x+25, pY=player.y+25;
             enemies.forEach((e,n)=>{
                 e.y+=4.5; if(e.el)e.el.style.top=(e.y-14)+'px';
@@ -164,10 +178,28 @@
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
             });
         }
-        function showResult(w){
-            dialog.style.display="block"; if(!w){ dialogTitle.innerText="GAME OVER"; dialogText.innerHTML="やっぱりジークフリートさんは最強だ…<br>修行しなおしてくるぞ！"; inputArea.style.display="none"; btnSave.style.display=btnShare.style.display="none"; btnRetry.style.display="block"; return; }
-            let t=((Date.now()-startTime)/1000).toFixed(1); finalScore=Math.max(100,50000-Math.floor(t*250)-damagePenalty);
-            let e=finalScore>=45000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>=30000?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？";
+        function showResult(w, isTimeUp = false){
+            dialog.style.display="block"; 
+            if(!w){ 
+                dialogTitle.innerText = isTimeUp ? "TIME UP" : "GAME OVER"; 
+                dialogText.innerHTML = isTimeUp ? 
+                    "遅いぞ！<br>実戦であれば今の一瞬が命取りだ！" : 
+                    "やっぱりジークフリートさんは最強だ…<br>修行しなおしてくるぞ！"; 
+                inputArea.style.display="none"; 
+                btnSave.style.display=btnShare.style.display="none"; 
+                btnRetry.style.display="block"; 
+                return; 
+            }
+            
+            let t=((Date.now()-startTime)/1000).toFixed(1); 
+            // スコア計算：初期50000、1秒につき400点減少、被弾1回につき5000点減少
+            // ノーミスなら25秒クリア（50000 - 25*400 = 40000）でちょうど星3
+            finalScore=Math.max(100,50000-Math.floor(t*400)-damagePenalty);
+            
+            let e=finalScore>=40000?"★★★\n強くなったな、フェードラッヘは安泰だ":
+                  finalScore>=20000?"★★☆\nなかなかやるな、ランスロット":
+                  "★☆☆\nもっと手合わせをしてやろうか？";
+            
             dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${e.replace(/\n/g,'<br>')}<br><br>タイム: ${t}秒 / スコア: ${finalScore}点`;
             shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${e.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
