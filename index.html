@@ -85,6 +85,9 @@
         const viewHeight=400, RANKING_KEY='lannu_ranking_final';
         const TIME_LIMIT = 40000; // 40秒制限
 
+        // キーの押しっぱなしを防止するためのフラグ管理
+        const keysPressed = {};
+
         let audioCtx = null;
         function playSE(type) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -154,9 +157,41 @@
             playSE('move');
             updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('goal'); showResult(true);}
         }
-        function addControl(id,d){ let el=document.getElementById(id); el.addEventListener('touchstart',e=>{e.preventDefault(); movePlayer(d);},{passive:false}); el.addEventListener('mousedown',()=>movePlayer(d)); }
+
+        // 十字キー（画面上ボタン）の長押し防止
+        function addControl(id,d){ 
+            let el=document.getElementById(id); 
+            el.addEventListener('touchstart',e=>{
+                e.preventDefault(); 
+                if(!keysPressed[id]){
+                    movePlayer(d);
+                    keysPressed[id] = true;
+                }
+            },{passive:false}); 
+            el.addEventListener('touchend',()=>keysPressed[id] = false);
+            el.addEventListener('mousedown',()=>{
+                if(!keysPressed[id]){
+                    movePlayer(d);
+                    keysPressed[id] = true;
+                }
+            }); 
+            el.addEventListener('mouseup',()=>keysPressed[id] = false);
+            el.addEventListener('mouseleave',()=>keysPressed[id] = false);
+        }
         addControl('btn-up','up'); addControl('btn-down','down'); addControl('btn-left','left'); addControl('btn-right','right');
-        window.addEventListener('keydown',e=>{if(e.key.includes('Arrow'))movePlayer(e.key.replace('Arrow','').toLowerCase());});
+
+        // キーボード操作の長押し（連射）防止
+        window.addEventListener('keydown',e=>{
+            if(!gameActive) return;
+            const key = e.key;
+            if(key.includes('Arrow') && !keysPressed[key]){
+                movePlayer(key.replace('Arrow','').toLowerCase());
+                keysPressed[key] = true; 
+            }
+        });
+        window.addEventListener('keyup',e=>{
+            keysPressed[e.key] = false; 
+        });
 
         function createEnemy(){
             if(!gameActive)return; let eDiv=document.createElement('div'); eDiv.className='sword'; eDiv.innerText='⚔️';
@@ -214,14 +249,8 @@
             }
             
             let t=((Date.now()-startTime)/1000).toFixed(1); 
-            // スコア計算再設計：ノーミスなら25秒クリア（50000 - 25*600 = 35000）付近で★3
-            // 秒間減少を600点に、★3しきい値を調整
             finalScore=Math.max(100,50000-Math.floor(t*600)-damagePenalty);
             
-            // しきい値調整
-            // ★★★：35000点以上 (ノーミスなら25秒以内)
-            // ★★☆：6500点より高い
-            // ★☆☆：6500点以下 (ご指定)
             let e=finalScore>=35000?"★★★\n強くなったな、フェードラッヘは安泰だ":
                   finalScore>6500?"★★☆\nなかなかやるな、ランスロット":
                   "★☆☆\nもっと手合わせをしてやろうか？";
