@@ -17,14 +17,16 @@
         #player { position:absolute; width:50px; height:50px; background-size:contain; background-repeat:no-repeat; background-position:center; z-index:10; }
         .sword { position:absolute; font-size:28px; width:28px; height:28px; display:flex; justify-content:center; align-items:center; z-index:5; filter:drop-shadow(0 0 5px #fff); animation:spinSword .25s infinite linear; }
         @keyframes spinSword { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-        #goal { position:absolute; top:50px; left:125px; width:70px; height:70px; font-size:70px; display:flex; justify-content:center; align-items:center; z-index:10; filter:drop-shadow(0 0 15px #ff0000); animation:roar 1s infinite alternate; }
+        #goal { position:absolute; top:50px; left:125px; width:70px; height:70px; z-index:10; filter:drop-shadow(0 0 15px #ff0000); animation:roar 1s infinite alternate; background:url('goal.png') center/contain no-repeat; }
         @keyframes roar { from { transform:scale(1); opacity:.8; } to { transform:scale(1.1); opacity:1; } }
         #ui-panel { position:absolute; top:5px; left:5px; color:#ff3300; background:rgba(0,0,0,0.8); padding:5px 10px; border-radius:12px; font-size:10px; font-weight:700; z-index:100; border:1px solid #4a0000; pointer-events:none; line-height:1.4; }
-
-        /* せかす演出用のスタイル */
         #timer { transition: color 0.3s, font-size 0.3s; display: inline-block; }
         .timer-hurry { color: #ff3300 !important; animation: pulse 0.5s infinite alternate; font-weight: 900; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.3); } }
+        
+        /* 回避エフェクト用 */
+        .dodge-effect { position:absolute; pointer-events:none; border-radius:50%; background:radial-gradient(circle, #fff, #ffd700, transparent); z-index:11; animation: particle .5s forwards; }
+        @keyframes particle { to { transform: translate(var(--tx), var(--ty)) scale(0); opacity:0; } }
 
         #custom-dialog { display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:260px; background:rgba(20,0,0,0.98); border:3px solid #ff3300; border-radius:15px; color:#fff; padding:20px; text-align:center; z-index:1000; box-shadow:0 0 50px #000; }
         #custom-dialog h2 { font-size:18px; color:#ff3300; margin:0 0 10px; }
@@ -32,13 +34,15 @@
         .dialog-btn-container { display:flex; flex-direction:column; gap:10px; margin-top:15px; }
         #custom-dialog button { width:100%; padding:12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:13px; }
         .btn-save { background:#ff3300; color:#fff; }
+        .btn-continue { background:#4a0000; color:#fff; border:2px solid #ffd700 !important; }
         .btn-share { background:#1da1f2; color:#fff; }
         .btn-retry { background:#555; color:#fff; }
         #ranking-display { position:absolute; bottom:5px; left:5px; background:rgba(0,0,0,0.8); color:#ffd700; padding:6px; border-radius:8px; font-size:9px; z-index:100; pointer-events:none; width:130px; border:1px solid #4a0000; }
-        #controls { display:grid; grid-template-columns:repeat(3,60px); grid-template-rows:repeat(2,60px); gap:15px; margin-top:20px; user-select:none; touch-action:manipulation; }
+        #controls { display:grid; grid-template-columns:repeat(4,60px); grid-template-rows:repeat(2,60px); gap:10px; margin-top:20px; user-select:none; touch-action:manipulation; }
         .btn { width:60px; height:60px; background:rgba(139,0,0,0.3); border:2px solid #ff3300; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#ff3300; cursor:pointer; -webkit-tap-highlight-color:transparent; }
         .btn:active { background:rgba(255,0,0,0.5); }
         .up { grid-column:2; grid-row:1; } .left { grid-column:1; grid-row:2; } .down { grid-column:2; grid-row:2; } .right { grid-column:3; grid-row:2; }
+        .dodge { grid-column:4; grid-row:1/3; height:130px; border-radius:30px; font-size:14px; font-weight:bold; flex-direction:column; }
         #credits { margin-top:40px; color:#888; font-size:11px; text-align:center; line-height:1.6; }
         .credit-item { margin:0 10px; display:inline-block; }
     </style>
@@ -48,7 +52,7 @@
         <div id="start-screen">
             <img src="title.png" alt="タイトル" class="title-img">
             <div class="start-message">
-                十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br><br>
+                十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>DODGEボタンで3回まで回避可能！<br><br>
                 <span class="note">スコアや名前はブラウザ内でのみ保存されます。</span><br>
                 <span class="note">音が出ますのでご注意ください。</span><br>
                 <span class="note">非公式同人ゲームです。</span>
@@ -56,12 +60,13 @@
             <button class="btn-start" onclick="startGame()">START</button>
         </div>
         <div id="game-bg"></div>
-        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️</span></div>
-        <div id="game-world"><div id="player"></div><div id="goal">🐉</div></div>
+        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️</span><br>DODGE: <span id="dodge-count">3</span></div>
+        <div id="game-world"><div id="player"></div><div id="goal"></div></div>
         <div id="custom-dialog">
             <h2 id="dialog-title">RESULT</h2><div id="dialog-text" style="font-size:13px;line-height:1.5;margin-bottom:10px;"></div>
             <div id="input-area"><input type="text" id="player-name" maxlength="8" placeholder="団長の名前を教えてくれ"></div>
             <div class="dialog-btn-container">
+                <button id="btn-action-continue" class="btn-continue" style="display:none;">ここからコンティニュー</button>
                 <button id="btn-action-save" class="btn-save">スコアを保存して次へ</button>
                 <button id="btn-action-share" class="btn-share">スコアを𝕏に投稿してくれ</button>
                 <button id="btn-action-retry" class="btn-retry">もう一度挑戦</button>
@@ -71,6 +76,7 @@
     </div>
     <div id="controls">
         <div class="btn up" id="btn-up">▲</div><div class="btn left" id="btn-left">◀</div><div class="btn down" id="btn-down">▼</div><div class="btn right" id="btn-right">▶</div>
+        <div class="btn dodge" id="btn-dodge">DODGE<br><span id="btn-dodge-val">3</span></div>
     </div>
     <div id="credits"><span class="credit-item">ゲーム制作：ろかす</span><span class="credit-item">イラスト：水田</span></div>
 
@@ -78,58 +84,50 @@
         const viewport=document.getElementById('game-viewport'), world=document.getElementById('game-world'), playerElement=document.getElementById('player');
         const timerElement=document.getElementById('timer'), distElement=document.getElementById('dist'), lifeIconsElement=document.getElementById('life-icons');
         const rankListElement=document.getElementById('rank-list'), dialog=document.getElementById('custom-dialog'), dialogTitle=document.getElementById('dialog-title'), dialogText=document.getElementById('dialog-text');
-        const inputArea=document.getElementById('input-area'), nameInput=document.getElementById('player-name'), btnSave=document.getElementById('btn-action-save'), btnShare=document.getElementById('btn-action-share'), btnRetry=document.getElementById('btn-action-retry'), startScreen=document.getElementById('start-screen');
+        const inputArea=document.getElementById('input-area'), nameInput=document.getElementById('player-name'), btnSave=document.getElementById('btn-action-save'), btnShare=document.getElementById('btn-action-share'), btnRetry=document.getElementById('btn-action-retry'), btnContinue=document.getElementById('btn-action-continue'), startScreen=document.getElementById('start-screen');
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=3, invincibilityFrames=0, damagePenalty=0;
-        let lastTickSecond = 40;
+        let lastTickSecond = 40, dodgeRemaining = 3, dodgeActive = false, dodgeBonus = 0, hasContinued = false;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final';
-        const TIME_LIMIT = 40000; // 40秒制限
+        const TIME_LIMIT = 40000;
 
-        // キーの押しっぱなしを防止するためのフラグ管理
         const keysPressed = {};
 
         let audioCtx = null;
         function playSE(type) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             const now = audioCtx.currentTime;
-
             if (type === 'start') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
+                osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1); gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'tick') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now);
                 gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.05);
                 osc.start(now); osc.stop(now + 0.05);
             } else if (type === 'move') {
                 osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
-                osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.05);
-                osc.start(now); osc.stop(now + 0.05);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.05); gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'dodge') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1500, now);
+                osc.frequency.linearRampToValueAtTime(3000, now + 0.1); gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'damage') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(330, now);
-                osc.frequency.linearRampToValueAtTime(165, now + 0.1);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
+                osc.type = 'square'; osc.frequency.setValueAtTime(330, now);
+                osc.frequency.linearRampToValueAtTime(165, now + 0.1); gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
             } else if (type === 'goal') {
                 [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
                     const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
                     o.type = 'square'; o.connect(g); g.connect(audioCtx.destination);
-                    o.frequency.setValueAtTime(freq, now + i * 0.1);
-                    g.gain.setValueAtTime(0.1, now + i * 0.1);
-                    g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.3);
-                    o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3);
+                    o.frequency.setValueAtTime(freq, now + i * 0.1); g.gain.setValueAtTime(0.1, now + i * 0.1);
+                    g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.3); o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3);
                 });
             }
         }
@@ -139,8 +137,7 @@
         function startGame(){ 
             playSE('start');
             startScreen.style.display='none'; 
-            gameActive=true; 
-            startTime=Date.now(); 
+            gameActive=true; startTime=Date.now(); 
             setInterval(createEnemy, 260); 
             requestAnimationFrame(loop); 
         }
@@ -150,29 +147,55 @@
             distElement.innerText=Math.max(0, Math.floor(player.y-100));
             let i=""; for(let j=0; j<3; j++) i+=j<life?"❤️":"🖤"; lifeIconsElement.innerText=i;
             playerElement.style.opacity=invincibilityFrames>0?((invincibilityFrames%10<5)?"0.3":"1"):"1";
+            document.getElementById('dodge-count').innerText = dodgeRemaining;
+            document.getElementById('btn-dodge-val').innerText = dodgeRemaining;
+            playerElement.style.filter = dodgeActive ? "brightness(2) drop-shadow(0 0 15px #ffd700)" : "none";
         }
         function movePlayer(d){
             if(!gameActive)return; const speed=28;
             if(d==='up')player.y-=speed; if(d==='down')player.y+=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
             player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2940,player.y));
-            playSE('move');
-            updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('goal'); showResult(true);}
+            playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('goal'); showResult(true);}
+        }
+        
+        function spawnParticles(x, y) {
+            for(let i=0; i<12; i++) {
+                const p = document.createElement('div');
+                p.className = 'dodge-effect';
+                const size = Math.random() * 10 + 5;
+                p.style.width = p.style.height = size + 'px';
+                p.style.left = (x + 25) + 'px'; p.style.top = (y + 25) + 'px';
+                const tx = (Math.random() - 0.5) * 150;
+                const ty = (Math.random() - 0.5) * 150;
+                p.style.setProperty('--tx', tx + 'px');
+                p.style.setProperty('--ty', ty + 'px');
+                world.appendChild(p);
+                setTimeout(() => p.remove(), 500);
+            }
         }
 
-        // 十字キー（画面上ボタン）の長押し防止
+        function useDodge() {
+            if(!gameActive || dodgeRemaining <= 0 || dodgeActive) return;
+            dodgeRemaining--;
+            dodgeActive = true;
+            playSE('tick');
+            updateView();
+            setTimeout(() => { dodgeActive = false; updateView(); }, 200);
+        }
+
         function addControl(id,d){ 
             let el=document.getElementById(id); 
             el.addEventListener('touchstart',e=>{
                 e.preventDefault(); 
                 if(!keysPressed[id]){
-                    movePlayer(d);
+                    if(d==='dodge') useDodge(); else movePlayer(d);
                     keysPressed[id] = true;
                 }
             },{passive:false}); 
             el.addEventListener('touchend',()=>keysPressed[id] = false);
             el.addEventListener('mousedown',()=>{
                 if(!keysPressed[id]){
-                    movePlayer(d);
+                    if(d==='dodge') useDodge(); else movePlayer(d);
                     keysPressed[id] = true;
                 }
             }); 
@@ -180,8 +203,8 @@
             el.addEventListener('mouseleave',()=>keysPressed[id] = false);
         }
         addControl('btn-up','up'); addControl('btn-down','down'); addControl('btn-left','left'); addControl('btn-right','right');
+        addControl('btn-dodge','dodge');
 
-        // キーボード操作の長押し（連射）防止
         window.addEventListener('keydown',e=>{
             if(!gameActive) return;
             const key = e.key;
@@ -189,10 +212,12 @@
                 movePlayer(key.replace('Arrow','').toLowerCase());
                 keysPressed[key] = true; 
             }
+            if((key === 'd' || key === ' ') && !keysPressed[key]) {
+                useDodge();
+                keysPressed[key] = true;
+            }
         });
-        window.addEventListener('keyup',e=>{
-            keysPressed[e.key] = false; 
-        });
+        window.addEventListener('keyup',e=>{ keysPressed[e.key] = false; });
 
         function createEnemy(){
             if(!gameActive)return; let eDiv=document.createElement('div'); eDiv.className='sword'; eDiv.innerText='⚔️';
@@ -202,42 +227,43 @@
         }
         function moveEnemies(){
             if(!gameActive)return; 
-            
-            // タイムアップ判定
             let elapsed = Date.now() - startTime;
             let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000);
             timerElement.innerText = remaining.toFixed(1);
-
-            // せかす演出 (残り10秒から)
             if (remaining <= 10) {
                 timerElement.classList.add('timer-hurry');
-                // 残り5秒から1秒ごとに警告音
                 if (Math.floor(remaining) < lastTickSecond && remaining <= 5) {
-                    playSE('tick');
-                    lastTickSecond = Math.floor(remaining);
+                    playSE('tick'); lastTickSecond = Math.floor(remaining);
                 }
-            } else {
-                timerElement.classList.remove('timer-hurry');
-            }
-            
-            if (elapsed >= TIME_LIMIT) {
-                gameActive = false;
-                showResult(false, true);
-                return;
-            }
+            } else { timerElement.classList.remove('timer-hurry'); }
+            if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
 
             if(invincibilityFrames>0)invincibilityFrames--;
             const pX=player.x+25, pY=player.y+25;
             enemies.forEach((e,n)=>{
                 e.y+=4.5; if(e.el)e.el.style.top=(e.y-14)+'px';
                 if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<26&&invincibilityFrames<=0){
-                    life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
+                    if(dodgeActive) {
+                        dodgeBonus += 3000;
+                        invincibilityFrames = 40;
+                        playSE('dodge');
+                        spawnParticles(player.x, player.y);
+                        if(e.el) {
+                            e.el.style.transition = "transform .2s, opacity .2s";
+                            e.el.style.transform = "scale(2)"; e.el.style.opacity = "0";
+                            setTimeout(()=>e.el.remove(), 200);
+                        }
+                        enemies.splice(n,1);
+                    } else {
+                        life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
+                    }
                 }
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
             });
         }
         function showResult(w, isTimeUp = false){
             dialog.style.display="block"; 
+            btnContinue.style.display="none";
             if(!w){ 
                 dialogTitle.innerText = isTimeUp ? "TIME UP" : "GAME OVER"; 
                 dialogText.innerHTML = isTimeUp ? 
@@ -246,20 +272,22 @@
                 inputArea.style.display="none"; 
                 btnSave.style.display=btnShare.style.display="none"; 
                 btnRetry.style.display="block"; 
+                if(!isTimeUp) btnContinue.style.display="block";
                 return; 
             }
-            
             let t=((Date.now()-startTime)/1000).toFixed(1); 
-            finalScore=Math.max(100,50000-Math.floor(t*600)-damagePenalty);
-            
-            let e=finalScore>=35000?"★★★\n強くなったな、フェードラッヘは安泰だ":
+            finalScore=hasContinued ? 0 : Math.max(100,50000-Math.floor(t*600)-damagePenalty+dodgeBonus);
+            let ratingText = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : 
+                  (finalScore>=35000?"★★★\n強くなったな、フェードラッヘは安泰だ":
                   finalScore>6500?"★★☆\nなかなかやるな、ランスロット":
-                  "★☆☆\nもっと手合わせをしてやろうか？";
-            
-            dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${e.replace(/\n/g,'<br>')}<br><br>タイム: ${t}秒 / スコア: ${finalScore}点`;
-            shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${e.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
+                  "★☆☆\nもっと手合わせをしてやろうか？");
+
+            dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${ratingText.replace(/\n/g,'<br>')}<br><br>タイム: ${t}秒 / スコア: ${finalScore}点`;
+            shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${ratingText.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
         }
+
+        btnContinue.onclick = () => { life = 3; hasContinued = true; dialog.style.display = "none"; gameActive = true; requestAnimationFrame(loop); updateView(); };
         btnSave.onclick=()=>{saveScore(nameInput.value||"師に並んだランぬ",finalScore); location.reload();};
         btnShare.onclick=()=>{window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,'_blank');};
         btnRetry.onclick=()=>location.reload();
