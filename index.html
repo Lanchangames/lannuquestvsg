@@ -100,7 +100,7 @@
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=5, invincibilityFrames=0, damagePenalty=0;
-        let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0, dodgeTimer = null, lastDodgePressTime = 0;
+        let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0, dodgeTimer = null, lastDodgePressTime = 0, dodgeWasSuccessful = false;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final', TIME_LIMIT = 40000;
 
         const keysPressed = {};
@@ -161,10 +161,18 @@
 
         function useDodge() {
             if(!gameActive || dodgeRemaining <= 0) return;
-            lastDodgePressTime = Date.now(); // 被弾時の判定用に時間を記録
+            lastDodgePressTime = Date.now();
+            dodgeWasSuccessful = false;
             dodgeRemaining--; dodgeActive = true;
             if(dodgeTimer) clearTimeout(dodgeTimer);
-            dodgeTimer = setTimeout(() => { dodgeActive = false; updateView(); }, 400); 
+            dodgeTimer = setTimeout(() => { 
+                dodgeActive = false; 
+                if(!dodgeWasSuccessful && gameActive) {
+                    playSE('failed');
+                    showPopText('FAILED...', player.x, player.y, '#ff3300');
+                }
+                updateView(); 
+            }, 400); 
             updateView();
         }
 
@@ -205,7 +213,7 @@
                 const dist = Math.sqrt((e.x-pX)**2+(e.y-pY)**2);
                 if(dist < 26) {
                     if(dodgeActive) {
-                        // SUCCESS: 無敵時間中であってもDODGE中なら判定を行う
+                        dodgeWasSuccessful = true;
                         dodgeBonus+=3000; invincibilityFrames=50; boostTimer=45; player.y-=130; 
                         playSE('success'); spawnParticles(player.x, player.y);
                         showPopText('SUCCESS!', player.x, player.y, '#ffd700');
@@ -222,17 +230,14 @@
                         enemies = enemies.filter(item => Math.sqrt((item.x-pX)**2+(item.y-pY)**2) >= 120);
                         updateView();
                     } else if(invincibilityFrames <= 0) {
-                        // 被弾
                         life--; damagePenalty+=5000; invincibilityFrames=60; 
-                        
-                        // 回避を試みた（ボタンを押してから1秒以内）が失敗した場合のみ文字と音を出す
                         if(Date.now() - lastDodgePressTime < 1000) {
+                            dodgeWasSuccessful = true;
                             playSE('failed'); 
                             showPopText('FAILED...', player.x, player.y, '#ff3300');
                         } else {
                             playSE('damage');
                         }
-                        
                         updateView(); if(life<=0){gameActive=false; showResult(false);}
                     }
                 }
