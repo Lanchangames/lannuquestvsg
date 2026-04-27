@@ -24,7 +24,6 @@
         .timer-hurry { color: #ff3300 !important; animation: pulse 0.5s infinite alternate; font-weight: 900; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.3); } }
         
-        /* 回避エフェクト用 */
         .dodge-effect { position:absolute; pointer-events:none; border-radius:50%; background:radial-gradient(circle, #fff, #ffd700, transparent); z-index:11; animation: particle .6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
         @keyframes particle { to { transform: translate(var(--tx), var(--ty)) scale(0); opacity:0; } }
 
@@ -38,16 +37,15 @@
         .btn-share { background:#1da1f2; color:#fff; }
         #ranking-display { position:absolute; bottom:5px; left:5px; background:rgba(0,0,0,0.8); color:#ffd700; padding:6px; border-radius:8px; font-size:9px; z-index:100; pointer-events:none; width:130px; border:1px solid #4a0000; }
 
-        /* 操作エリア：中央配置 */
         #controls { display:grid; grid-template-columns:repeat(3,65px); gap:12px; margin-top:20px; user-select:none; justify-content:center; }
         .btn { width:65px; height:65px; background:rgba(139,0,0,0.4); border:2px solid #ff3300; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#ff3300; cursor:pointer; -webkit-tap-highlight-color:transparent; box-shadow: 0 0 10px rgba(255,51,0,0.3); position: relative; }
         .btn:active { background:rgba(255,0,0,0.6); transform: scale(0.9); }
         
         .up    { grid-column: 2; grid-row: 1; }
         .left  { grid-column: 1; grid-row: 2; }
-        .down  { grid-column: 2; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
-        .dodge { grid-column: 3; grid-row: 1; background:#4a0000; color:#ffd700; border:2px solid #ffd700; font-size:12px; font-weight:bold; flex-direction:column; text-shadow: 0 0 5px #ffd700; }
+        /* 下ボタンの代わりにDODGEを配置 */
+        .dodge { grid-column: 2; grid-row: 2; background:#4a0000; color:#ffd700; border:2px solid #ffd700; font-size:12px; font-weight:bold; flex-direction:column; text-shadow: 0 0 5px #ffd700; }
 
         #credits { margin-top:40px; color:#888; font-size:11px; text-align:center; line-height:1.6; }
         .credit-item { margin:0 10px; display:inline-block; }
@@ -66,7 +64,7 @@
             <button class="btn-start" onclick="startGame()">START</button>
         </div>
         <div id="game-bg"></div>
-        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️</span><br>DODGE: <span id="dodge-count">3</span></div>
+        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️❤️❤️</span><br>DODGE: <span id="dodge-count">3</span></div>
         <div id="game-world"><div id="player"></div><div id="goal"></div></div>
         <div id="custom-dialog">
             <h2 id="dialog-title">RESULT</h2><div id="dialog-text" style="font-size:13px;line-height:1.5;margin-bottom:10px;"></div>
@@ -83,9 +81,8 @@
     <div id="controls">
         <div class="btn up" id="btn-up">▲</div>
         <div class="btn left" id="btn-left">◀</div>
-        <div class="btn down" id="btn-down">▼</div>
-        <div class="btn right" id="btn-right">▶</div>
         <div class="btn dodge" id="btn-dodge">DODGE<br><span id="btn-dodge-val">3</span></div>
+        <div class="btn right" id="btn-right">▶</div>
     </div>
     <div id="credits"><span class="credit-item">ゲーム制作：ろかす</span><span class="credit-item">イラスト：水田</span></div>
 
@@ -96,7 +93,7 @@
         const inputArea=document.getElementById('input-area'), nameInput=document.getElementById('player-name'), btnSave=document.getElementById('btn-action-save'), btnShare=document.getElementById('btn-action-share'), btnRetry=document.getElementById('btn-action-retry'), btnContinue=document.getElementById('btn-action-continue'), startScreen=document.getElementById('start-screen');
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
-        let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=3, invincibilityFrames=0, damagePenalty=0;
+        let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=5, invincibilityFrames=0, damagePenalty=0;
         let lastTickSecond = 40, dodgeRemaining = 3, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final', TIME_LIMIT = 40000;
 
@@ -124,7 +121,7 @@
             playerElement.style.left=player.x+'px'; playerElement.style.top=player.y+'px';
             world.style.top = -Math.max(0, Math.min(2600, player.y-viewHeight/2)) + 'px';
             distElement.innerText=Math.max(0, Math.floor(player.y-100));
-            let i=""; for(let j=0; j<3; j++) i+=j<life?"❤️":"🖤"; lifeIconsElement.innerText=i;
+            let i=""; for(let j=0; j<5; j++) i+=j<life?"❤️":"🖤"; lifeIconsElement.innerText=i;
             playerElement.style.opacity=invincibilityFrames>0?((invincibilityFrames%10<5)?"0.3":"1"):"1";
             document.getElementById('dodge-count').innerText = dodgeRemaining;
             document.getElementById('btn-dodge-val').innerText = dodgeRemaining;
@@ -134,7 +131,7 @@
         function movePlayer(d){
             if(!gameActive)return; 
             const speed = (boostTimer > 0) ? 42 : 28;
-            if(d==='up')player.y-=speed; if(d==='down')player.y+=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
+            if(d==='up')player.y-=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
             player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2940,player.y));
             playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; showResult(true);}
         }
@@ -158,16 +155,21 @@
 
         function addControl(id,d){ 
             let el=document.getElementById(id);
+            if(!el) return;
             const trigger = (e) => { e.preventDefault(); if(!keysPressed[id]){ if(d==='dodge') useDodge(); else movePlayer(d); keysPressed[id]=true; } };
             el.addEventListener('touchstart', trigger, {passive:false}); el.addEventListener('mousedown', trigger);
             el.addEventListener('touchend',()=>keysPressed[id]=false); el.addEventListener('mouseup',()=>keysPressed[id]=false);
         }
-        ['up','down','left','right','dodge'].forEach(d => addControl('btn-'+d, d));
+        ['up','left','right','dodge'].forEach(d => addControl('btn-'+d, d));
 
         window.addEventListener('keydown',e=>{
             if(!gameActive) return;
             const key = e.key;
-            if(key.includes('Arrow') && !keysPressed[key]){ movePlayer(key.replace('Arrow','').toLowerCase()); keysPressed[key]=true; }
+            if(key.includes('Arrow') && !keysPressed[key]){ 
+                const dir = key.replace('Arrow','').toLowerCase();
+                if(dir !== 'down') movePlayer(dir); 
+                keysPressed[key]=true; 
+            }
             if((key === 'd' || key === ' ') && !keysPressed[key]) { useDodge(); keysPressed[key]=true; }
         });
         window.addEventListener('keyup',e=>{ keysPressed[e.key]=false; });
@@ -226,7 +228,7 @@
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
         }
 
-        btnContinue.onclick = () => { life = 3; hasContinued = true; dialog.style.display = "none"; gameActive = true; requestAnimationFrame(loop); updateView(); };
+        btnContinue.onclick = () => { life = 5; hasContinued = true; dialog.style.display = "none"; gameActive = true; requestAnimationFrame(loop); updateView(); };
         btnSave.onclick=()=>{saveScore(nameInput.value||"師に並んだランぬ",finalScore); location.reload();};
         btnShare.onclick=()=>{window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,'_blank');};
         btnRetry.onclick=()=>location.reload();
