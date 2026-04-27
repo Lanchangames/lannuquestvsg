@@ -27,6 +27,14 @@
         .dodge-effect { position:absolute; pointer-events:none; border-radius:50%; background:radial-gradient(circle, #fff, #ffd700, transparent); z-index:11; animation: particle .6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
         @keyframes particle { to { transform: translate(var(--tx), var(--ty)) scale(0); opacity:0; } }
 
+        /* ポップテキスト（成功・失敗） */
+        .pop-text { position:absolute; font-weight:900; font-size:22px; z-index:100; pointer-events:none; animation: popUp 0.8s ease-out forwards; text-shadow: 2px 2px 0 #000; }
+        @keyframes popUp {
+            0% { transform: scale(0.5); opacity:0; }
+            20% { transform: scale(1.2); opacity:1; }
+            100% { transform: translateY(-60px) scale(1); opacity:0; }
+        }
+
         #custom-dialog { display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:260px; background:rgba(20,0,0,0.98); border:3px solid #ff3300; border-radius:15px; color:#fff; padding:20px; text-align:center; z-index:1000; box-shadow:0 0 50px #000; }
         #custom-dialog h2 { font-size:18px; color:#ff3300; margin:0 0 10px; }
         #custom-dialog input { width:80%; padding:10px; margin:10px 0; border-radius:5px; border:2px solid #ff3300; background:#000; color:#fff; font-size:16px; text-align:center; }
@@ -55,7 +63,7 @@
         <div id="start-screen">
             <img src="title.png" alt="タイトル" class="title-img">
             <div class="start-message">
-                十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>DODGEボタンで5回まで回避可能！<br><br>
+                十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>DODGEボタンで3回まで回避可能！<br><br>
                 <span class="note">スコアや名前はブラウザ内でのみ保存されます。</span><br>
                 <span class="note">音が出ますのでご注意ください。</span><br>
                 <span class="note">非公式同人ゲームです。</span>
@@ -93,7 +101,7 @@
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=5, invincibilityFrames=0, damagePenalty=0;
-        let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0;
+        let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0, dodgeTimer = null;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final', TIME_LIMIT = 40000;
 
         const keysPressed = {};
@@ -110,10 +118,15 @@
             } else if (type === 'damage') { osc.type='square'; osc.frequency.setValueAtTime(200, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
         }
 
+        function showPopText(txt, x, y, col) {
+            const el = document.createElement('div'); el.className = 'pop-text';
+            el.innerText = txt; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = col;
+            world.appendChild(el); setTimeout(() => el.remove(), 800);
+        }
+
         function startGame(){ 
             playSE('start'); startScreen.style.display='none'; gameActive=true; startTime=Date.now(); 
-            setInterval(createEnemy, 280); 
-            requestAnimationFrame(loop); 
+            setInterval(createEnemy, 280); requestAnimationFrame(loop); 
         }
 
         function updateView(){
@@ -146,9 +159,10 @@
         }
 
         function useDodge() {
-            if(!gameActive || dodgeRemaining <= 0 || dodgeActive) return;
+            if(!gameActive || dodgeRemaining <= 0) return; // 回避中の制限を解除
             dodgeRemaining--; dodgeActive = true;
-            setTimeout(() => { dodgeActive = false; updateView(); }, 400); 
+            if(dodgeTimer) clearTimeout(dodgeTimer);
+            dodgeTimer = setTimeout(() => { dodgeActive = false; updateView(); }, 400); 
             updateView();
         }
 
@@ -189,6 +203,7 @@
                     if(dodgeActive) {
                         dodgeBonus+=3000; invincibilityFrames=50; boostTimer=45; player.y-=130; 
                         playSE('dodge'); spawnParticles(player.x, player.y);
+                        showPopText('成功', player.x, player.y, '#ffd700');
                         
                         enemies.forEach(item => {
                             let dist = Math.sqrt((item.x-pX)**2+(item.y-pY)**2);
@@ -202,7 +217,9 @@
                         enemies = enemies.filter(item => Math.sqrt((item.x-pX)**2+(item.y-pY)**2) >= 120);
                         updateView();
                     } else {
-                        life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
+                        life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); 
+                        showPopText('失敗', player.x, player.y, '#ff3300');
+                        updateView(); if(life<=0){gameActive=false; showResult(false);}
                     }
                 }
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
@@ -216,10 +233,7 @@
             if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
             if(invincibilityFrames>0)invincibilityFrames--;
             if(boostTimer>0)boostTimer--;
-            
-            moveEnemies();
-            updateView(); 
-            requestAnimationFrame(loop);
+            moveEnemies(); updateView(); requestAnimationFrame(loop);
         }
 
         function showResult(w, isTimeUp = false){
