@@ -25,7 +25,7 @@
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.3); } }
         
         /* 回避エフェクト用 */
-        .dodge-effect { position:absolute; pointer-events:none; border-radius:50%; background:radial-gradient(circle, #fff, #ffd700, transparent); z-index:11; animation: particle .5s forwards; }
+        .dodge-effect { position:absolute; pointer-events:none; border-radius:50%; background:radial-gradient(circle, #fff, #ffd700, transparent); z-index:11; animation: particle .6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
         @keyframes particle { to { transform: translate(var(--tx), var(--ty)) scale(0); opacity:0; } }
 
         #custom-dialog { display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:260px; background:rgba(20,0,0,0.98); border:3px solid #ff3300; border-radius:15px; color:#fff; padding:20px; text-align:center; z-index:1000; box-shadow:0 0 50px #000; }
@@ -34,15 +34,22 @@
         .dialog-btn-container { display:flex; flex-direction:column; gap:10px; margin-top:15px; }
         #custom-dialog button { width:100%; padding:12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:13px; }
         .btn-save { background:#ff3300; color:#fff; }
-        .btn-continue { background:#4a0000; color:#fff; border:2px solid #ffd700 !important; }
+        .btn-continue, .btn-retry { background:#4a0000; color:#fff; border:2px solid #ffd700 !important; }
         .btn-share { background:#1da1f2; color:#fff; }
-        .btn-retry { background:#555; color:#fff; }
         #ranking-display { position:absolute; bottom:5px; left:5px; background:rgba(0,0,0,0.8); color:#ffd700; padding:6px; border-radius:8px; font-size:9px; z-index:100; pointer-events:none; width:130px; border:1px solid #4a0000; }
-        #controls { display:grid; grid-template-columns:repeat(4,60px); grid-template-rows:repeat(2,60px); gap:10px; margin-top:20px; user-select:none; touch-action:manipulation; }
-        .btn { width:60px; height:60px; background:rgba(139,0,0,0.3); border:2px solid #ff3300; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#ff3300; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-        .btn:active { background:rgba(255,0,0,0.5); }
-        .up { grid-column:2; grid-row:1; } .left { grid-column:1; grid-row:2; } .down { grid-column:2; grid-row:2; } .right { grid-column:3; grid-row:2; }
-        .dodge { grid-column:4; grid-row:1/3; height:130px; border-radius:30px; font-size:14px; font-weight:bold; flex-direction:column; }
+
+        /* 片手操作用：ワンハンド・アーク・レイアウト */
+        #controls { position: relative; width: 320px; height: 180px; margin-top: 10px; user-select:none; }
+        .btn { position: absolute; width: 55px; height: 55px; background:rgba(139,0,0,0.4); border:2px solid #ff3300; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#ff3300; cursor:pointer; -webkit-tap-highlight-color:transparent; box-shadow: 0 0 10px rgba(255,51,0,0.3); }
+        .btn:active { background:rgba(255,0,0,0.6); transform: scale(0.9); }
+        
+        /* 親指の可動域に合わせた配置 */
+        .up    { right: 80px; bottom: 120px; }
+        .down  { right: 80px; bottom: 10px; }
+        .left  { right: 145px; bottom: 65px; }
+        .right { right: 15px; bottom: 65px; }
+        .dodge { right: 75px; bottom: 60px; width: 65px; height: 65px; background:#4a0000; color:#ffd700; border:2px solid #ffd700; font-size:12px; font-weight:bold; flex-direction:column; z-index: 10; text-shadow: 0 0 5px #ffd700; }
+
         #credits { margin-top:40px; color:#888; font-size:11px; text-align:center; line-height:1.6; }
         .credit-item { margin:0 10px; display:inline-block; }
     </style>
@@ -69,7 +76,7 @@
                 <button id="btn-action-continue" class="btn-continue" style="display:none;">ここからコンティニュー</button>
                 <button id="btn-action-save" class="btn-save">スコアを保存して次へ</button>
                 <button id="btn-action-share" class="btn-share">スコアを𝕏に投稿してくれ</button>
-                <button id="btn-action-retry" class="btn-retry">もう一度挑戦</button>
+                <button id="btn-action-retry" class="btn-retry">最初から挑戦</button>
             </div>
         </div>
         <div id="ranking-display"><strong>ハイスコア</strong><br><span id="rank-list">記録なし</span></div>
@@ -88,136 +95,80 @@
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=3, invincibilityFrames=0, damagePenalty=0;
-        let lastTickSecond = 40, dodgeRemaining = 3, dodgeActive = false, dodgeBonus = 0, hasContinued = false;
-        const viewHeight=400, RANKING_KEY='lannu_ranking_final';
-        const TIME_LIMIT = 40000;
+        let lastTickSecond = 40, dodgeRemaining = 3, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0;
+        const viewHeight=400, RANKING_KEY='lannu_ranking_final', TIME_LIMIT = 40000;
 
         const keysPressed = {};
-
         let audioCtx = null;
         function playSE(type) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            if (type === 'start') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now);
-                osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1); gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'tick') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, now);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.05);
-                osc.start(now); osc.stop(now + 0.05);
-            } else if (type === 'move') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
-                osc.frequency.exponentialRampToValueAtTime(440, now + 0.05); gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05);
-            } else if (type === 'dodge') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(1500, now);
-                osc.frequency.linearRampToValueAtTime(3000, now + 0.1); gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'damage') {
-                osc.type = 'square'; osc.frequency.setValueAtTime(330, now);
-                osc.frequency.linearRampToValueAtTime(165, now + 0.1); gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
-            } else if (type === 'goal') {
-                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
-                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-                    o.type = 'square'; o.connect(g); g.connect(audioCtx.destination);
-                    o.frequency.setValueAtTime(freq, now + i * 0.1); g.gain.setValueAtTime(0.1, now + i * 0.1);
-                    g.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.3); o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.3);
-                });
-            }
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime;
+            if (type === 'start') { osc.frequency.setValueAtTime(523.25, now); osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'tick') { osc.frequency.setValueAtTime(1200, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'move') { osc.frequency.setValueAtTime(880, now); osc.frequency.exponentialRampToValueAtTime(440, now + 0.05); gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'dodge') { osc.type='sawtooth'; osc.frequency.setValueAtTime(600, now); osc.frequency.linearRampToValueAtTime(1600, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'damage') { osc.type='square'; osc.frequency.setValueAtTime(200, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
         }
 
         displayRanking(); updateView();
 
         function startGame(){ 
-            playSE('start');
-            startScreen.style.display='none'; 
-            gameActive=true; startTime=Date.now(); 
-            setInterval(createEnemy, 260); 
+            playSE('start'); startScreen.style.display='none'; gameActive=true; startTime=Date.now(); 
+            setInterval(createEnemy, 280); // 頻度をわずかに緩和
             requestAnimationFrame(loop); 
         }
         function updateView(){
             playerElement.style.left=player.x+'px'; playerElement.style.top=player.y+'px';
-            let s=Math.max(0, Math.min(2600, player.y-viewHeight/2)); world.style.top=-s+'px';
+            world.style.top = -Math.max(0, Math.min(2600, player.y-viewHeight/2)) + 'px';
             distElement.innerText=Math.max(0, Math.floor(player.y-100));
             let i=""; for(let j=0; j<3; j++) i+=j<life?"❤️":"🖤"; lifeIconsElement.innerText=i;
             playerElement.style.opacity=invincibilityFrames>0?((invincibilityFrames%10<5)?"0.3":"1"):"1";
             document.getElementById('dodge-count').innerText = dodgeRemaining;
             document.getElementById('btn-dodge-val').innerText = dodgeRemaining;
-            playerElement.style.filter = dodgeActive ? "brightness(2) drop-shadow(0 0 15px #ffd700)" : "none";
+            playerElement.style.filter = dodgeActive ? "brightness(2.5) drop-shadow(0 0 15px #ffd700)" : (boostTimer > 0 ? "brightness(1.5) drop-shadow(0 0 8px #ff3300)" : "none");
         }
         function movePlayer(d){
-            if(!gameActive)return; const speed=28;
+            if(!gameActive)return; 
+            const speed = (boostTimer > 0) ? 42 : 28;
             if(d==='up')player.y-=speed; if(d==='down')player.y+=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
             player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2940,player.y));
-            playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('goal'); showResult(true);}
+            playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('move'); showResult(true);}
         }
         
         function spawnParticles(x, y) {
-            for(let i=0; i<12; i++) {
-                const p = document.createElement('div');
-                p.className = 'dodge-effect';
-                const size = Math.random() * 10 + 5;
-                p.style.width = p.style.height = size + 'px';
-                p.style.left = (x + 25) + 'px'; p.style.top = (y + 25) + 'px';
-                const tx = (Math.random() - 0.5) * 150;
-                const ty = (Math.random() - 0.5) * 150;
-                p.style.setProperty('--tx', tx + 'px');
-                p.style.setProperty('--ty', ty + 'px');
-                world.appendChild(p);
-                setTimeout(() => p.remove(), 500);
+            for(let i=0; i<18; i++) {
+                const p = document.createElement('div'); p.className = 'dodge-effect';
+                p.style.width = p.style.height = (Math.random()*12+6) + 'px';
+                p.style.left = (x+25)+'px'; p.style.top = (y+25)+'px';
+                p.style.setProperty('--tx', (Math.random()-0.5)*250 + 'px'); p.style.setProperty('--ty', (Math.random()-0.5)*250 + 'px');
+                world.appendChild(p); setTimeout(() => p.remove(), 600);
             }
         }
 
         function useDodge() {
             if(!gameActive || dodgeRemaining <= 0 || dodgeActive) return;
-            dodgeRemaining--;
-            dodgeActive = true;
-            playSE('tick');
+            dodgeRemaining--; dodgeActive = true;
+            setTimeout(() => { dodgeActive = false; updateView(); }, 250); 
             updateView();
-            setTimeout(() => { dodgeActive = false; updateView(); }, 200);
         }
 
         function addControl(id,d){ 
-            let el=document.getElementById(id); 
-            el.addEventListener('touchstart',e=>{
-                e.preventDefault(); 
-                if(!keysPressed[id]){
-                    if(d==='dodge') useDodge(); else movePlayer(d);
-                    keysPressed[id] = true;
-                }
-            },{passive:false}); 
-            el.addEventListener('touchend',()=>keysPressed[id] = false);
-            el.addEventListener('mousedown',()=>{
-                if(!keysPressed[id]){
-                    if(d==='dodge') useDodge(); else movePlayer(d);
-                    keysPressed[id] = true;
-                }
-            }); 
-            el.addEventListener('mouseup',()=>keysPressed[id] = false);
-            el.addEventListener('mouseleave',()=>keysPressed[id] = false);
+            let el=document.getElementById(id);
+            const trigger = (e) => { e.preventDefault(); if(!keysPressed[id]){ if(d==='dodge') useDodge(); else movePlayer(d); keysPressed[id]=true; } };
+            el.addEventListener('touchstart', trigger, {passive:false}); el.addEventListener('mousedown', trigger);
+            el.addEventListener('touchend',()=>keysPressed[id]=false); el.addEventListener('mouseup',()=>keysPressed[id]=false);
         }
-        addControl('btn-up','up'); addControl('btn-down','down'); addControl('btn-left','left'); addControl('btn-right','right');
-        addControl('btn-dodge','dodge');
+        ['up','down','left','right','dodge'].forEach(d => addControl('btn-'+d, d));
 
         window.addEventListener('keydown',e=>{
             if(!gameActive) return;
             const key = e.key;
-            if(key.includes('Arrow') && !keysPressed[key]){
-                movePlayer(key.replace('Arrow','').toLowerCase());
-                keysPressed[key] = true; 
-            }
-            if((key === 'd' || key === ' ') && !keysPressed[key]) {
-                useDodge();
-                keysPressed[key] = true;
-            }
+            if(key.includes('Arrow') && !keysPressed[key]){ movePlayer(key.replace('Arrow','').toLowerCase()); keysPressed[key]=true; }
+            if((key === 'd' || key === ' ') && !keysPressed[key]) { useDodge(); keysPressed[key]=true; }
         });
-        window.addEventListener('keyup',e=>{ keysPressed[e.key] = false; });
+        window.addEventListener('keyup',e=>{ keysPressed[e.key]=false; });
 
         function createEnemy(){
             if(!gameActive)return; let eDiv=document.createElement('div'); eDiv.className='sword'; eDiv.innerText='⚔️';
@@ -225,65 +176,44 @@
             eDiv.style.left=x+'px'; eDiv.style.top=y+'px'; world.appendChild(eDiv);
             enemies.push({el:eDiv, x:x+14, y:y+14});
         }
-        function moveEnemies(){
-            if(!gameActive)return; 
-            let elapsed = Date.now() - startTime;
-            let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000);
+        function loop(){
+            if(!gameActive)return;
+            let elapsed = Date.now() - startTime; let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000);
             timerElement.innerText = remaining.toFixed(1);
-            if (remaining <= 10) {
-                timerElement.classList.add('timer-hurry');
-                if (Math.floor(remaining) < lastTickSecond && remaining <= 5) {
-                    playSE('tick'); lastTickSecond = Math.floor(remaining);
-                }
-            } else { timerElement.classList.remove('timer-hurry'); }
             if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
-
             if(invincibilityFrames>0)invincibilityFrames--;
-            const pX=player.x+25, pY=player.y+25;
+            if(boostTimer>0)boostTimer--;
+            
             enemies.forEach((e,n)=>{
-                e.y+=4.5; if(e.el)e.el.style.top=(e.y-14)+'px';
-                if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<26&&invincibilityFrames<=0){
+                e.y+=4.1; // 速度を微調整
+                if(e.el)e.el.style.top=(e.y-14)+'px';
+                if(Math.sqrt((e.x-(player.x+25))**2+(e.y-(player.y+25))**2)<26&&invincibilityFrames<=0){
                     if(dodgeActive) {
-                        dodgeBonus += 3000;
-                        invincibilityFrames = 40;
-                        playSE('dodge');
-                        spawnParticles(player.x, player.y);
-                        if(e.el) {
-                            e.el.style.transition = "transform .2s, opacity .2s";
-                            e.el.style.transform = "scale(2)"; e.el.style.opacity = "0";
-                            setTimeout(()=>e.el.remove(), 200);
-                        }
-                        enemies.splice(n,1);
+                        dodgeBonus+=3000; invincibilityFrames=50; boostTimer=45; player.y-=130; 
+                        playSE('dodge'); spawnParticles(player.x, player.y);
+                        if(e.el){ e.el.style.transform="scale(2.5) rotate(180deg)"; e.el.style.opacity="0"; setTimeout(()=>e.el.remove(),200); }
+                        enemies.splice(n,1); updateView();
                     } else {
                         life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
                     }
                 }
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
             });
+            updateView(); requestAnimationFrame(loop);
         }
+
         function showResult(w, isTimeUp = false){
-            dialog.style.display="block"; 
-            btnContinue.style.display="none";
+            dialog.style.display="block"; btnContinue.style.display="none";
             if(!w){ 
                 dialogTitle.innerText = isTimeUp ? "TIME UP" : "GAME OVER"; 
-                dialogText.innerHTML = isTimeUp ? 
-                    "遅いぞ！<br>実戦であれば今の一瞬が命取りだ！" : 
-                    "やっぱりジークフリートさんは最強だ…<br>修行しなおしてくるぞ！"; 
-                inputArea.style.display="none"; 
-                btnSave.style.display=btnShare.style.display="none"; 
-                btnRetry.style.display="block"; 
-                if(!isTimeUp) btnContinue.style.display="block";
-                return; 
+                dialogText.innerHTML = isTimeUp ? "遅いぞ！<br>実戦であれば今の一瞬が命取りだ！" : "やっぱりジークフリートさんは最強だ…<br>修行しなおしてくるぞ！"; 
+                inputArea.style.display="none"; btnSave.style.display=btnShare.style.display="none"; 
+                if(!isTimeUp) btnContinue.style.display="block"; return; 
             }
-            let t=((Date.now()-startTime)/1000).toFixed(1); 
-            finalScore=hasContinued ? 0 : Math.max(100,50000-Math.floor(t*600)-damagePenalty+dodgeBonus);
-            let ratingText = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : 
-                  (finalScore>=35000?"★★★\n強くなったな、フェードラッヘは安泰だ":
-                  finalScore>6500?"★★☆\nなかなかやるな、ランスロット":
-                  "★☆☆\nもっと手合わせをしてやろうか？");
-
-            dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${ratingText.replace(/\n/g,'<br>')}<br><br>タイム: ${t}秒 / スコア: ${finalScore}点`;
-            shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${ratingText.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
+            finalScore=hasContinued ? 0 : Math.max(100,50000-Math.floor(((Date.now()-startTime)/1000)*600)-damagePenalty+dodgeBonus);
+            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=35000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>6500?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
+            dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${r.replace(/\n/g,'<br>')}<br><br>タイム: ${((Date.now()-startTime)/1000).toFixed(1)}秒 / スコア: ${finalScore}点`;
+            shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${r.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
         }
 
