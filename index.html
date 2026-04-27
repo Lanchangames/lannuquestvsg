@@ -44,7 +44,6 @@
         .up    { grid-column: 2; grid-row: 1; }
         .left  { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; }
-        /* 下ボタンの代わりにDODGEを配置 */
         .dodge { grid-column: 2; grid-row: 2; background:#4a0000; color:#ffd700; border:2px solid #ffd700; font-size:12px; font-weight:bold; flex-direction:column; text-shadow: 0 0 5px #ffd700; }
 
         #credits { margin-top:40px; color:#888; font-size:11px; text-align:center; line-height:1.6; }
@@ -188,10 +187,22 @@
                 if(e.el)e.el.style.top=(e.y-14)+'px';
                 if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<26&&invincibilityFrames<=0){
                     if(dodgeActive) {
+                        // 一閃（近接剣の消去）ギミック
                         dodgeBonus+=3000; invincibilityFrames=50; boostTimer=45; player.y-=130; 
                         playSE('dodge'); spawnParticles(player.x, player.y);
-                        if(e.el){ e.el.style.transform="scale(2.5) rotate(180deg)"; e.el.style.opacity="0"; setTimeout(()=>e.el.remove(),200); }
-                        enemies.splice(n,1); updateView();
+                        
+                        enemies.forEach(item => {
+                            let dist = Math.sqrt((item.x-pX)**2+(item.y-pY)**2);
+                            if(dist < 120 && item.el) {
+                                item.el.style.transition = "transform 0.3s, opacity 0.3s";
+                                item.el.style.transform = "scale(0) rotate(180deg)";
+                                item.el.style.opacity = "0";
+                                setTimeout(() => { if(item.el) item.el.remove(); }, 300);
+                            }
+                        });
+                        // 範囲内の敵を論理的にも消去
+                        enemies = enemies.filter(item => Math.sqrt((item.x-pX)**2+(item.y-pY)**2) >= 120);
+                        updateView();
                     } else {
                         life--; damagePenalty+=5000; invincibilityFrames=60; playSE('damage'); updateView(); if(life<=0){gameActive=false; showResult(false);}
                     }
@@ -222,7 +233,8 @@
                 if(!isTimeUp) btnContinue.style.display="block"; return; 
             }
             finalScore=hasContinued ? 0 : Math.max(100,50000-Math.floor(((Date.now()-startTime)/1000)*600)-damagePenalty+dodgeBonus);
-            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=35000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>6500?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
+            // 期待値を考慮した均等な星の分布へ調整
+            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=30000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>=15000?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
             dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${r.replace(/\n/g,'<br>')}<br><br>タイム: ${((Date.now()-startTime)/1000).toFixed(1)}秒 / スコア: ${finalScore}点`;
             shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${r.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
