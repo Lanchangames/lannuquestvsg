@@ -27,7 +27,6 @@
         .dodge-effect { position:absolute; pointer-events:none; border-radius:50%; background:radial-gradient(circle, #fff, #ffd700, transparent); z-index:11; animation: particle .6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
         @keyframes particle { to { transform: translate(var(--tx), var(--ty)) scale(0); opacity:0; } }
 
-        /* ポップテキスト */
         .pop-text { position:absolute; font-weight:900; font-size:22px; z-index:100; pointer-events:none; animation: popUp 0.8s ease-out forwards; text-shadow: 2px 2px 0 #000; }
         @keyframes popUp {
             0% { transform: scale(0.5); opacity:0; }
@@ -63,7 +62,7 @@
         <div id="start-screen">
             <img src="title.png" alt="タイトル" class="title-img">
             <div class="start-message">
-                十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>DODGEボタンで3回まで回避可能！<br><br>
+                十字キーでランぬを操作して<br>ジークフリートさんがくりだす剣を回避し<br>いまこそ並び立つぞ！<br>DODGEボタンで5回まで回避可能！<br><br>
                 <span class="note">スコアや名前はブラウザ内でのみ保存されます。</span><br>
                 <span class="note">音が出ますのでご注意ください。</span><br>
                 <span class="note">非公式同人ゲームです。</span>
@@ -71,7 +70,7 @@
             <button class="btn-start" onclick="startGame()">START</button>
         </div>
         <div id="game-bg"></div>
-        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️❤️❤️</span><br>DODGE: <span id="dodge-count">3</span></div>
+        <div id="ui-panel">師匠まで: <span id="dist">--</span>m<br>残り時間: <span id="timer">40.0</span>s<br>LIFE: <span id="life-icons">❤️❤️❤️❤️❤️</span><br>DODGE: <span id="dodge-count">5</span></div>
         <div id="game-world"><div id="player"></div><div id="goal"></div></div>
         <div id="custom-dialog">
             <h2 id="dialog-title">RESULT</h2><div id="dialog-text" style="font-size:13px;line-height:1.5;margin-bottom:10px;"></div>
@@ -88,7 +87,7 @@
     <div id="controls">
         <div class="btn up" id="btn-up">▲</div>
         <div class="btn left" id="btn-left">◀</div>
-        <div class="btn dodge" id="btn-dodge">DODGE<br><span id="btn-dodge-val">3</span></div>
+        <div class="btn dodge" id="btn-dodge">DODGE<br><span id="btn-dodge-val">5</span></div>
         <div class="btn right" id="btn-right">▶</div>
     </div>
     <div id="credits"><span class="credit-item">ゲーム制作：ろかす</span><span class="credit-item">イラスト：水田</span></div>
