@@ -100,7 +100,7 @@
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
         let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=5, invincibilityFrames=0, damagePenalty=0;
-        let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0, dodgeTimer = null;
+        let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0, dodgeTimer = null, lastDodgePressTime = 0;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final', TIME_LIMIT = 40000;
 
         const keysPressed = {};
@@ -161,6 +161,7 @@
 
         function useDodge() {
             if(!gameActive || dodgeRemaining <= 0) return;
+            lastDodgePressTime = Date.now(); // 被弾時の判定用に時間を記録
             dodgeRemaining--; dodgeActive = true;
             if(dodgeTimer) clearTimeout(dodgeTimer);
             dodgeTimer = setTimeout(() => { dodgeActive = false; updateView(); }, 400); 
@@ -200,15 +201,18 @@
             enemies.forEach((e,n)=>{
                 e.y+=4.1; 
                 if(e.el)e.el.style.top=(e.y-14)+'px';
-                if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<26&&invincibilityFrames<=0){
+                
+                const dist = Math.sqrt((e.x-pX)**2+(e.y-pY)**2);
+                if(dist < 26) {
                     if(dodgeActive) {
+                        // SUCCESS: 無敵時間中であってもDODGE中なら判定を行う
                         dodgeBonus+=3000; invincibilityFrames=50; boostTimer=45; player.y-=130; 
                         playSE('success'); spawnParticles(player.x, player.y);
                         showPopText('SUCCESS!', player.x, player.y, '#ffd700');
                         
                         enemies.forEach(item => {
-                            let dist = Math.sqrt((item.x-pX)**2+(item.y-pY)**2);
-                            if(dist < 120 && item.el) {
+                            let d = Math.sqrt((item.x-pX)**2+(item.y-pY)**2);
+                            if(d < 120 && item.el) {
                                 item.el.style.transition = "transform 0.3s, opacity 0.3s";
                                 item.el.style.transform = "scale(0) rotate(180deg)";
                                 item.el.style.opacity = "0";
@@ -217,9 +221,18 @@
                         });
                         enemies = enemies.filter(item => Math.sqrt((item.x-pX)**2+(item.y-pY)**2) >= 120);
                         updateView();
-                    } else {
-                        life--; damagePenalty+=5000; invincibilityFrames=60; playSE('failed'); 
-                        showPopText('FAILED...', player.x, player.y, '#ff3300');
+                    } else if(invincibilityFrames <= 0) {
+                        // 被弾
+                        life--; damagePenalty+=5000; invincibilityFrames=60; 
+                        
+                        // 回避を試みた（ボタンを押してから1秒以内）が失敗した場合のみ文字と音を出す
+                        if(Date.now() - lastDodgePressTime < 1000) {
+                            playSE('failed'); 
+                            showPopText('FAILED...', player.x, player.y, '#ff3300');
+                        } else {
+                            playSE('damage');
+                        }
+                        
                         updateView(); if(life<=0){gameActive=false; showResult(false);}
                     }
                 }
