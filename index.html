@@ -38,17 +38,16 @@
         .btn-share { background:#1da1f2; color:#fff; }
         #ranking-display { position:absolute; bottom:5px; left:5px; background:rgba(0,0,0,0.8); color:#ffd700; padding:6px; border-radius:8px; font-size:9px; z-index:100; pointer-events:none; width:130px; border:1px solid #4a0000; }
 
-        /* 片手操作用：ワンハンド・アーク・レイアウト */
-        #controls { position: relative; width: 320px; height: 180px; margin-top: 10px; user-select:none; }
-        .btn { position: absolute; width: 55px; height: 55px; background:rgba(139,0,0,0.4); border:2px solid #ff3300; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#ff3300; cursor:pointer; -webkit-tap-highlight-color:transparent; box-shadow: 0 0 10px rgba(255,51,0,0.3); }
+        /* 操作エリア：中央配置 */
+        #controls { display:grid; grid-template-columns:repeat(3,65px); gap:12px; margin-top:20px; user-select:none; justify-content:center; }
+        .btn { width:65px; height:65px; background:rgba(139,0,0,0.4); border:2px solid #ff3300; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px; color:#ff3300; cursor:pointer; -webkit-tap-highlight-color:transparent; box-shadow: 0 0 10px rgba(255,51,0,0.3); position: relative; }
         .btn:active { background:rgba(255,0,0,0.6); transform: scale(0.9); }
         
-        /* 親指の可動域に合わせた配置 */
-        .up    { right: 80px; bottom: 120px; }
-        .down  { right: 80px; bottom: 10px; }
-        .left  { right: 145px; bottom: 65px; }
-        .right { right: 15px; bottom: 65px; }
-        .dodge { right: 75px; bottom: 60px; width: 65px; height: 65px; background:#4a0000; color:#ffd700; border:2px solid #ffd700; font-size:12px; font-weight:bold; flex-direction:column; z-index: 10; text-shadow: 0 0 5px #ffd700; }
+        .up    { grid-column: 2; grid-row: 1; }
+        .left  { grid-column: 1; grid-row: 2; }
+        .down  { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .dodge { grid-column: 3; grid-row: 1; background:#4a0000; color:#ffd700; border:2px solid #ffd700; font-size:12px; font-weight:bold; flex-direction:column; text-shadow: 0 0 5px #ffd700; }
 
         #credits { margin-top:40px; color:#888; font-size:11px; text-align:center; line-height:1.6; }
         .credit-item { margin:0 10px; display:inline-block; }
@@ -82,7 +81,10 @@
         <div id="ranking-display"><strong>ハイスコア</strong><br><span id="rank-list">記録なし</span></div>
     </div>
     <div id="controls">
-        <div class="btn up" id="btn-up">▲</div><div class="btn left" id="btn-left">◀</div><div class="btn down" id="btn-down">▼</div><div class="btn right" id="btn-right">▶</div>
+        <div class="btn up" id="btn-up">▲</div>
+        <div class="btn left" id="btn-left">◀</div>
+        <div class="btn down" id="btn-down">▼</div>
+        <div class="btn right" id="btn-right">▶</div>
         <div class="btn dodge" id="btn-dodge">DODGE<br><span id="btn-dodge-val">3</span></div>
     </div>
     <div id="credits"><span class="credit-item">ゲーム制作：ろかす</span><span class="credit-item">イラスト：水田</span></div>
@@ -112,13 +114,12 @@
             } else if (type === 'damage') { osc.type='square'; osc.frequency.setValueAtTime(200, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(now); osc.stop(now + 0.2); }
         }
 
-        displayRanking(); updateView();
-
         function startGame(){ 
             playSE('start'); startScreen.style.display='none'; gameActive=true; startTime=Date.now(); 
-            setInterval(createEnemy, 280); // 頻度をわずかに緩和
+            setInterval(createEnemy, 280); 
             requestAnimationFrame(loop); 
         }
+
         function updateView(){
             playerElement.style.left=player.x+'px'; playerElement.style.top=player.y+'px';
             world.style.top = -Math.max(0, Math.min(2600, player.y-viewHeight/2)) + 'px';
@@ -129,12 +130,13 @@
             document.getElementById('btn-dodge-val').innerText = dodgeRemaining;
             playerElement.style.filter = dodgeActive ? "brightness(2.5) drop-shadow(0 0 15px #ffd700)" : (boostTimer > 0 ? "brightness(1.5) drop-shadow(0 0 8px #ff3300)" : "none");
         }
+
         function movePlayer(d){
             if(!gameActive)return; 
             const speed = (boostTimer > 0) ? 42 : 28;
             if(d==='up')player.y-=speed; if(d==='down')player.y+=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
             player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2940,player.y));
-            playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; playSE('move'); showResult(true);}
+            playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; showResult(true);}
         }
         
         function spawnParticles(x, y) {
@@ -176,18 +178,13 @@
             eDiv.style.left=x+'px'; eDiv.style.top=y+'px'; world.appendChild(eDiv);
             enemies.push({el:eDiv, x:x+14, y:y+14});
         }
-        function loop(){
-            if(!gameActive)return;
-            let elapsed = Date.now() - startTime; let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000);
-            timerElement.innerText = remaining.toFixed(1);
-            if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
-            if(invincibilityFrames>0)invincibilityFrames--;
-            if(boostTimer>0)boostTimer--;
-            
+
+        function moveEnemies(){
+            const pX=player.x+25, pY=player.y+25;
             enemies.forEach((e,n)=>{
-                e.y+=4.1; // 速度を微調整
+                e.y+=4.1; 
                 if(e.el)e.el.style.top=(e.y-14)+'px';
-                if(Math.sqrt((e.x-(player.x+25))**2+(e.y-(player.y+25))**2)<26&&invincibilityFrames<=0){
+                if(Math.sqrt((e.x-pX)**2+(e.y-pY)**2)<26&&invincibilityFrames<=0){
                     if(dodgeActive) {
                         dodgeBonus+=3000; invincibilityFrames=50; boostTimer=45; player.y-=130; 
                         playSE('dodge'); spawnParticles(player.x, player.y);
@@ -199,7 +196,19 @@
                 }
                 if(e.y>player.y+600){if(e.el)e.el.remove(); enemies.splice(n,1);}
             });
-            updateView(); requestAnimationFrame(loop);
+        }
+
+        function loop(){
+            if(!gameActive)return;
+            let elapsed = Date.now() - startTime; let remaining = Math.max(0, (TIME_LIMIT - elapsed) / 1000);
+            timerElement.innerText = remaining.toFixed(1);
+            if (elapsed >= TIME_LIMIT) { gameActive = false; showResult(false, true); return; }
+            if(invincibilityFrames>0)invincibilityFrames--;
+            if(boostTimer>0)boostTimer--;
+            
+            moveEnemies();
+            updateView(); 
+            requestAnimationFrame(loop);
         }
 
         function showResult(w, isTimeUp = false){
@@ -223,7 +232,6 @@
         btnRetry.onclick=()=>location.reload();
         function saveScore(n,s){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; r.push({name:n,score:s}); r.sort((a,b)=>b.score-a.score); r=r.slice(0,5); localStorage.setItem(RANKING_KEY,JSON.stringify(r));}
         function displayRanking(){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; if(!r.length)return; let h=""; r.forEach((t,i)=>{let n=t.name.length>7?t.name.substring(0,6)+'…':t.name; h+=`${i+1}. ${n} (${t.score})<br>`;}); rankListElement.innerHTML=h;}
-        function loop(){ if(gameActive){ moveEnemies(); updateView(); requestAnimationFrame(loop); } }
     </script>
 </body>
 </html>
