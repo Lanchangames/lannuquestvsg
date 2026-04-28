@@ -13,7 +13,7 @@
         .note { color:#888; font-size:9px; }
         .btn-start { background:#4a0000; color:#fff; border:2px solid #ff3300; padding:12px 35px; border-radius:25px; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 4px 0 #200000; text-shadow:0 0 5px #ff3300; touch-action:manipulation; }
         #game-bg { position:absolute; top:0; left:0; width:100%; height:100%; background:url('haikei.png') center/cover; opacity:0.2; z-index:0; pointer-events:none; }
-        #game-world { position:absolute; width:100%; height:3000px; top:-2600px; background-image:linear-gradient(rgba(255,51,0,0.2) 3px,transparent 3px), linear-gradient(90deg,rgba(255,51,0,0.1) 2px,transparent 2px); background-size:100% 80px, 40px 100%; z-index:1; }
+        #game-world { position:absolute; width:100%; height:3400px; top:-3000px; background-image:linear-gradient(rgba(255,51,0,0.2) 3px,transparent 3px), linear-gradient(90deg,rgba(255,51,0,0.1) 2px,transparent 2px); background-size:100% 80px, 40px 100%; z-index:1; }
         #player { position:absolute; width:50px; height:50px; background-size:contain; background-repeat:no-repeat; background-position:center; z-index:10; }
         .sword { position:absolute; font-size:28px; width:28px; height:28px; display:flex; justify-content:center; align-items:center; z-index:5; filter:drop-shadow(0 0 5px #fff); animation:spinSword .25s infinite linear; }
         @keyframes spinSword { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
@@ -99,7 +99,7 @@
         const inputArea=document.getElementById('input-area'), nameInput=document.getElementById('player-name'), btnSave=document.getElementById('btn-action-save'), btnShare=document.getElementById('btn-action-share'), btnRetry=document.getElementById('btn-action-retry'), btnContinue=document.getElementById('btn-action-continue'), startScreen=document.getElementById('start-screen');
         const charaImg=new Image(); charaImg.src='chara.png'; charaImg.onload=()=>{playerElement.style.backgroundImage=`url('${charaImg.src}')`; viewport.style.opacity='1';}; charaImg.onerror=()=>{playerElement.style.backgroundColor='#ff3300'; viewport.style.opacity='1';};
         
-        let player={x:135, y:2940}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=5, invincibilityFrames=0, damagePenalty=0;
+        let player={x:135, y:3300}, enemies=[], gameActive=false, startTime, finalScore, shareText="", life=5, invincibilityFrames=0, damagePenalty=0;
         let lastTickSecond = 40, dodgeRemaining = 5, dodgeActive = false, dodgeBonus = 0, hasContinued = false, boostTimer = 0, dodgeTimer = null, lastDodgePressTime = 0, dodgeWasSuccessful = false;
         const viewHeight=400, RANKING_KEY='lannu_ranking_final', TIME_LIMIT = 40000;
 
@@ -132,7 +132,7 @@
 
         function updateView(){
             playerElement.style.left=player.x+'px'; playerElement.style.top=player.y+'px';
-            world.style.top = -Math.max(0, Math.min(2600, player.y-viewHeight/2)) + 'px';
+            world.style.top = -Math.max(0, Math.min(3000, player.y-viewHeight/2)) + 'px';
             distElement.innerText=Math.max(0, Math.floor(player.y-100));
             let i=""; for(let j=0; j<5; j++) i+=j<life?"❤️":"🖤"; lifeIconsElement.innerText=i;
             playerElement.style.opacity=invincibilityFrames>0?((invincibilityFrames%10<5)?"0.3":"1"):"1";
@@ -145,7 +145,7 @@
             if(!gameActive)return; 
             const speed = (boostTimer > 0) ? 42 : 28;
             if(d==='up')player.y-=speed; if(d==='left')player.x-=speed; if(d==='right')player.x+=speed;
-            player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(2940,player.y));
+            player.x=Math.max(0,Math.min(270,player.x)); player.y=Math.max(0,Math.min(3300,player.y));
             playSE('move'); updateView(); if(player.y<120&&player.x>100&&player.x<170){gameActive=false; showResult(true);}
         }
         
@@ -264,7 +264,7 @@
                 if(!isTimeUp) btnContinue.style.display="block"; return; 
             }
             finalScore=hasContinued ? 0 : Math.max(100,50000-Math.floor(((Date.now()-startTime)/1000)*600)-damagePenalty+dodgeBonus);
-            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=32000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>=18000?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
+            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=22000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>=10000?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
             dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${r.replace(/\n/g,'<br>')}<br><br>タイム: ${((Date.now()-startTime)/1000).toFixed(1)}秒 / スコア: ${finalScore}点`;
             shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${r.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
