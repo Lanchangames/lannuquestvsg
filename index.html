@@ -264,7 +264,7 @@
                 if(!isTimeUp) btnContinue.style.display="block"; return; 
             }
             finalScore=hasContinued ? 0 : Math.max(100,50000-Math.floor(((Date.now()-startTime)/1000)*600)-damagePenalty+dodgeBonus);
-            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=30000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>=15000?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
+            let r = hasContinued ? "【コンティニューしてクリア】\n次は一度も倒れずに並び立ってみせろ！" : (finalScore>=32000?"★★★\n強くなったな、フェードラッヘは安泰だ":finalScore>=18000?"★★☆\nなかなかやるな、ランスロット":"★☆☆\nもっと手合わせをしてやろうか？");
             dialogTitle.innerText="★CLEAR!★"; dialogText.innerHTML=`フェードラッヘはまかせてください！<br><br>${r.replace(/\n/g,'<br>')}<br><br>タイム: ${((Date.now()-startTime)/1000).toFixed(1)}秒 / スコア: ${finalScore}点`;
             shareText=`【非公式同人ゲーム ランぬクエストVSジークフリートさん】をクリア！ 評価: ${r.replace(/\n/g,'')} スコア: ${finalScore}点 #ランぬクエストジークフリートさん戦`;
             inputArea.style.display="block"; btnSave.style.display=btnShare.style.display="block"; btnRetry.style.display="none";
@@ -276,6 +276,8 @@
         btnRetry.onclick=()=>location.reload();
         function saveScore(n,s){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; r.push({name:n,score:s}); r.sort((a,b)=>b.score-a.score); r=r.slice(0,5); localStorage.setItem(RANKING_KEY,JSON.stringify(r));}
         function displayRanking(){let r=JSON.parse(localStorage.getItem(RANKING_KEY))||[]; if(!r.length)return; let h=""; r.forEach((t,i)=>{let n=t.name.length>7?t.name.substring(0,6)+'…':t.name; h+=`${i+1}. ${n} (${t.score})<br>`;}); rankListElement.innerHTML=h;}
+        
+        displayRanking();
     </script>
 </body>
 </html>
